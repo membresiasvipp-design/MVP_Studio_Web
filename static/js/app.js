@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    // ==========================================
+  // ==========================================
     // 2. DESCARGA DE YOUTUBE (SIN USAR EL SERVIDOR)
     // ==========================================
     const downloadBtn = document.getElementById("download-btn");
@@ -72,8 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             statusText.classList.remove("hidden");
-            statusText.style.color = "#03dac6"; // Verde éxito
-            statusText.innerText = "⏳ Generando enlace premium desde tu red...";
+            statusText.style.color = "#03dac6"; 
+            statusText.innerHTML = "⏳ Generando enlace premium desde tu red...";
 
             try {
                 // Extraemos el código del video
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!match) throw new Error("La URL no es de YouTube o no es válida.");
                 const videoId = match[1];
 
-                // Petición directa a RapidAPI desde el navegador
+                // Petición a RapidAPI
                 const resApi = await fetch(`https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`, {
                     method: "GET",
                     headers: {
@@ -91,23 +91,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const dataApi = await resApi.json();
-                if (!dataApi.link) throw new Error("La API no pudo generar el enlace. Intenta otro video.");
+                if (!dataApi.link) throw new Error("La API no pudo generar el enlace.");
 
-                // Forzamos la descarga en el navegador del usuario
-                statusText.innerText = "✅ ¡Listo! Descargando a tu dispositivo...";
-                
-                const a = document.createElement("a");
-                a.href = dataApi.link;
-                a.target = "_blank"; 
-                a.download = `Audio_${videoId}.mp3`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                statusText.innerText = "⬇️ Audio descargado localmente. Ahora arrástralo a la caja '2. Subir audio'.";
+                // EN LUGAR DE FORZAR LA DESCARGA, CREAMOS UN BOTÓN PARA QUE EL USUARIO HAGA CLIC
+                statusText.innerHTML = `
+                    <div style="margin-top: 15px; padding: 15px; background: rgba(3, 218, 198, 0.1); border-radius: 8px; border: 1px solid #03dac6;">
+                        <p style="color: #fff; margin-bottom: 10px;">✅ ¡Enlace generado con éxito!</p>
+                        <a href="${dataApi.link}" target="_blank" style="display: inline-block; padding: 12px 20px; background: #03dac6; color: #000; font-weight: bold; text-decoration: none; border-radius: 5px; width: 100%; text-align: center;">⬇️ DESCARGAR MP3 AHORA</a>
+                        <p style="color: #a2a5b5; font-size: 0.8rem; margin-top: 10px;">* Al descargar, arrastra el archivo a la caja 2.</p>
+                    </div>
+                `;
 
             } catch (error) {
-                statusText.style.color = "#cf6679"; // Rojo error
+                statusText.style.color = "#cf6679"; 
                 statusText.innerText = `❌ Error: ${error.message}`;
             }
         });
