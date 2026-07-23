@@ -133,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 3. SUBIDA MANUAL DE ARCHIVOS (CAJA 2)
+    // 3. SUBIDA MANUAL DE ARCHIVOS (CLIC, TOQUE Y ARRASTRE)
     // ==========================================
     const fileInputs = document.querySelectorAll('input[type="file"]');
     
@@ -141,6 +141,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const dropZone = input.closest('.drop-zone') || input.parentElement;
 
         if (dropZone) {
+            // 1. EVENTO TÁCTIL Y DE CLIC (Para Android, iOS y PC)
+            dropZone.addEventListener('click', (e) => {
+                // Evitamos un bucle infinito si el clic ocurre directamente sobre el input invisible
+                if (e.target !== input) {
+                    input.click(); // Abre la galería o explorador de archivos
+                }
+            });
+            
+            // Hacemos que el cursor cambie a "mano" para que en PC se note que es clickeable
+            dropZone.style.cursor = "pointer";
+
+            // 2. EVENTOS DE ARRASTRE (DRAG & DROP PARA PC)
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 dropZone.addEventListener(eventName, (e) => {
                     e.preventDefault();
@@ -171,6 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        // 3. RESPUESTA VISUAL
         input.addEventListener('change', (e) => {
             if (e.target.files && e.target.files.length > 0) {
                 const fileName = e.target.files[0].name;
@@ -179,24 +192,65 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (textDisplay) {
                     textDisplay.innerText = `✅ Archivo listo: ${fileName}`;
                     textDisplay.style.color = "#03dac6";
+                    textDisplay.style.fontWeight = "bold";
                 }
             }
         });
     });
 
     // ==========================================
-    // 4. PROCESAMIENTO DE IA (CONEXIÓN AL BACKEND)
+    // 4. CONTROL DE MENÚS Y VENTANAS MODALES
     // ==========================================
-    const processForm = document.getElementById("process-form"); // Asegúrate de que tu form tenga este ID en HTML
-    const processBtn = document.getElementById("process-btn"); // O si usas un botón suelto
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            navItems.forEach(n => n.classList.remove('active'));
+            item.classList.add('active');
+            
+            document.querySelectorAll('.view-section').forEach(v => {
+                v.classList.add('hidden');
+                v.classList.remove('active');
+            });
+            
+            const targetId = item.getAttribute('data-target');
+            if(targetId) {
+                const targetView = document.getElementById(targetId);
+                if(targetView) {
+                    targetView.classList.remove('hidden');
+                    targetView.classList.add('active');
+                }
+            }
+        });
+    });
+
+    document.querySelectorAll('.modal-trigger').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modalId = btn.getAttribute('data-modal');
+            if(modalId) {
+                document.getElementById(modalId).classList.remove('hidden');
+            }
+        });
+    });
+
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.modal').classList.add('hidden');
+        });
+    });
+
+    // ==========================================
+    // 5. PROCESAMIENTO DE IA (CONEXIÓN AL BACKEND)
+    // ==========================================
+    const processForm = document.getElementById("process-form");
+    const processBtn = document.getElementById("process-btn");
     
     // Función que envía el archivo a Python
     const handleProcess = async (e) => {
         if(e) e.preventDefault();
         
         const fileInput = document.querySelector('input[type="file"]');
-        const statusDiv = document.getElementById("processing-status"); // Asegúrate de tener este div en tu HTML
-        const resultDiv = document.getElementById("results-area"); // Asegúrate de tener este div en tu HTML
+        const statusDiv = document.getElementById("processing-status");
+        const resultDiv = document.getElementById("results-area");
 
         if (!fileInput || fileInput.files.length === 0) {
             alert("Por favor, sube un archivo de audio primero.");
