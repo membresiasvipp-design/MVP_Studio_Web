@@ -30,52 +30,62 @@ def descargar_youtube(url: str) -> dict:
     }
 
     try:
-        # 1. Hacemos la petición a RapidAPI
         response = requests.get(api_url, headers=headers, params=querystring, timeout=20)
-        
-        # Si RapidAPI nos bloquea (ej. límite de cuota o error de clave)
         if response.status_code != 200:
-            return {"status": "error", "message": f"Fallo en API (Código {response.status_code}): {response.text}"}
+            print(f"[ERROR API] Código {response.status_code} - {response.text}")
+            return {"status": "error", "message": f"Fallo en API (Código {response.status_code})"}
             
         data = response.json()
-        
-        # Si la API responde pero dice que hay un error con el video
-        if data.get("status") != "ok" and data.get("msg") != "success":
-             return {"status": "error", "message": f"Mensaje de la API: {data.get('msg', 'Error desconocido')}"}
-        
         download_url = data.get("link") 
         title = data.get("title", f"Pista_{video_id}")
 
         if download_url:
-            print(f"[YT] Enlace obtenido. Descargando audio...")
-            dl_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-            audio_res = requests.get(download_url, headers=dl_headers, allow_redirects=True, timeout=60)
+            print(f"[YT] Enlace obtenido: {download_url[:40]}... Intentando descargar.")
             
-            # Si el enlace de descarga final falla
+            # CAMUFLAJE: Engañamos al servidor final haciéndonos pasar por Chrome en Windows
+            session = requests.Session()
+            dl_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+                "Upgrade-Insecure-Requests": "1"
+            }
+            
+            audio_res = session.get(download_url, headers=dl_headers, allow_redirects=True, timeout=60)
+            
             if audio_res.status_code != 200:
-                 return {"status": "error", "message": f"El enlace de descarga dio error {audio_res.status_code}"}
+                print(f"[ERROR DESCARGA] El enlace final nos bloqueó. HTTP {audio_res.status_code}")
+                return {"status": "error", "message": f"El servidor de descarga bloqueó la petición (HTTP {audio_res.status_code})"}
 
             with open(temp_mp3, "wb") as f:
                 f.write(audio_res.content)
                 
-            if os.path.getsize(temp_mp3) < 50000:
-                if os.path.exists(temp_mp3): os.remove(temp_mp3)
-                return {"status": "error", "message": "El archivo descargado está vacío o corrupto."}
+            file_size = os.path.getsize(temp_mp3)
+            print(f"[YT] Archivo bajado con éxito. Peso total: {file_size} bytes")
             
-            print("[YT] Convirtiendo a WAV...")
+            # COMPROBACIÓN: Si pesa muy poco, Cloudflare nos mandó una página HTML de bloqueo
+            if file_size < 50000:
+                with open(temp_mp3, "r", encoding="utf-8", errors="ignore") as f:
+                    print(f"[ERROR SEGURIDAD] Nos bloquearon con HTML. Contenido: {f.read()[:150]}")
+                if os.path.exists(temp_mp3): os.remove(temp_mp3)
+                return {"status": "error", "message": "Protección Anti-Bot detectada en el enlace de descarga."}
+            
+            print("[YT] Archivo 100% real. Convirtiendo formato a WAV para la IA...")
             os.system(f'ffmpeg -y -i "{temp_mp3}" "{out_wav}" -loglevel quiet')
             
             if os.path.exists(temp_mp3): 
                 os.remove(temp_mp3)
             
             if not os.path.exists(out_wav):
-                return {"status": "error", "message": "Fallo interno al convertir el formato a WAV."}
+                print("[ERROR FFMPEG] La conversión de audio falló.")
+                return {"status": "error", "message": "Fallo al preparar el audio para la IA."}
 
+            print("[YT] ¡Descarga y conversión exitosa!")
             return {"status": "success", "title": title, "file_path": out_wav}
         else:
-            return {"status": "error", "message": "La API no devolvió ningún enlace ('link')."}
+            print(f"[ERROR API] La respuesta no tenía link: {data}")
+            return {"status": "error", "message": "La API no devolvió ningún enlace válido."}
 
-    except requests.exceptions.Timeout:
-        return {"status": "error", "message": "La API tardó demasiado en responder (Timeout)."}
     except Exception as e:
-        return {"status": "error", "message": f"Error del sistema: {str(e)}"}
+        print(f"[ERROR CRÍTICO] {str(e)}")
+        return {"status": "error", "message": f"Error interno: {str(e)}"}
