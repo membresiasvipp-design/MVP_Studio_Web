@@ -11,13 +11,12 @@ from pydantic import BaseModel
 
 print("[*] Cargando módulos internos para la Nube...")
 
-# 1. Ya NO importamos auth_sheets
 from backend.core.audio_manager import descargar_youtube
 from backend.core.ai_separator import ai_engine, OUTPUT_DIR
 
 app = FastAPI()
 
-# --- RUTAS SEGURAS PARA SERVIDOR WEB (LINUX) ---
+# --- RUTAS SEGURAS PARA SERVIDOR WEB ---
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 LICENSE_FILE = DATA_DIR / "sys_token.dat"
@@ -25,8 +24,12 @@ LICENSE_FILE = DATA_DIR / "sys_token.dat"
 DOWNLOADS_DIR = Path("descargas")
 DOWNLOADS_DIR.mkdir(exist_ok=True)
 
-class ActivationRequest(BaseModel): codigo: str
-class DownloadRequest(BaseModel): url: str
+class ActivationRequest(BaseModel): 
+    codigo: str
+    
+class DownloadRequest(BaseModel): 
+    url: str
+    
 class ProcessRequest(BaseModel):
     file_path: str
     mode: str
@@ -37,14 +40,16 @@ background_tasks = {}
 def check_status(): 
     return {"activated": LICENSE_FILE.exists()}
 
-# 2. RUTAS DE ACTIVACIÓN REPARADA (Licencia Universal)
+# --- 1. LOGIN REPARADO ---
 @app.post("/api/activar")
 def activar_software(request: ActivationRequest):
     if request.codigo.strip().upper() == "MVP-STUDIO":
-        with open(LICENSE_FILE, "w") as f: f.write("ACTIVATED=TRUE")
+        with open(LICENSE_FILE, "w") as f: 
+            f.write("ACTIVATED=TRUE")
         return {"status": "success"}
     raise HTTPException(status_code=401, detail="Código inválido.")
 
+# --- 2. DESCARGA YOUTUBE ---
 @app.post("/api/descargar")
 def descargar_audio(request: DownloadRequest):
     print(f"[*] Petición de descarga web: {request.url}")
@@ -52,12 +57,14 @@ def descargar_audio(request: DownloadRequest):
     if res["status"] == "success": return res
     raise HTTPException(status_code=400, detail=res["message"])
 
+# --- 3. SUBIDA Y PROCESAMIENTO (CAJA 3) ---
 @app.post("/api/upload")
 async def upload_audio(file: UploadFile = File(...)):
     print(f"[*] Archivo subido: {file.filename}")
     try:
         file_path = DOWNLOADS_DIR / file.filename
-        with open(file_path, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        with open(file_path, "wb") as buffer: 
+            shutil.copyfileobj(file.file, buffer)
         return {"status": "success", "file_path": str(file_path), "title": file.filename}
     except Exception as e: 
         raise HTTPException(status_code=500, detail=str(e))
@@ -75,10 +82,11 @@ def procesar_audio(request: ProcessRequest):
 
 @app.get("/api/task/{task_id}")
 def get_task_status(task_id: str):
-    if task_id not in background_tasks: raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    if task_id not in background_tasks: 
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
     return background_tasks[task_id]
 
-# Montamos las carpetas estáticas normales
+# --- 4. ARCHIVOS ESTÁTICOS ---
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/output", StaticFiles(directory=str(OUTPUT_DIR)), name="output")
 
