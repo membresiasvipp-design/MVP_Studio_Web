@@ -54,12 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 2. DESCARGA DE YOUTUBE (VÍA PIPED NETWORK)
+    // 2. DESCARGA DE YOUTUBE (PUENTE DE REDIRECCIÓN)
     // ==========================================
     const downloadBtn = document.getElementById("download-btn");
     
     if(downloadBtn) {
-        downloadBtn.addEventListener("click", async () => {
+        downloadBtn.addEventListener("click", () => {
             const urlInput = document.getElementById("youtube-url").value.trim();
             const statusText = document.getElementById("download-status");
 
@@ -68,45 +68,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            // Mostramos el puente de redirección instantáneamente (sin fetch, sin bloqueos)
             statusText.classList.remove("hidden");
-            statusText.style.color = "#03dac6"; 
-            statusText.innerHTML = "⏳ Conectando a la red descentralizada...";
-
-            try {
-                // Extraemos el ID exacto del video
-                const match = urlInput.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-                if (!match) throw new Error("La URL no es de YouTube o no es válida.");
-                const videoId = match[1];
-
-                // Petición a Piped (Permite CORS, 0 bloqueos)
-                const resApi = await fetch(`https://pipedapi.kavin.rocks/streams/${videoId}`);
-                if (!resApi.ok) throw new Error("El servidor no pudo procesar el enlace.");
-
-                const dataApi = await resApi.json();
-                
-                if (!dataApi.audioStreams || dataApi.audioStreams.length === 0) {
-                    throw new Error("No se encontró audio en este video.");
-                }
-
-                // Extraemos el formato M4A (Máxima calidad y compatible con la IA)
-                const m4aStreams = dataApi.audioStreams.filter(s => s.format === "M4A");
-                const bestStream = m4aStreams.length > 0 ? m4aStreams[0] : dataApi.audioStreams[0];
-
-                // Mostramos el botón de enlace directo
-                statusText.innerHTML = `
-                    <div style="margin-top: 15px; padding: 15px; background: rgba(3, 218, 198, 0.1); border-radius: 8px; border: 1px solid #03dac6;">
-                        <p style="color: #fff; margin-bottom: 10px;">✅ ¡Enlace limpio generado!</p>
-                        <a href="${bestStream.url}" target="_blank" style="display: inline-block; padding: 12px 20px; background: #03dac6; color: #000; font-weight: bold; text-decoration: none; border-radius: 5px; width: 100%; text-align: center;">⬇️ OBTENER AUDIO AHORA</a>
-                        <p style="color: #a2a5b5; font-size: 0.85rem; margin-top: 10px;">
-                            <b>Nota Importante:</b> Si al hacer clic se te abre una pestaña negra con un reproductor de audio, simplemente haz clic en los <b>3 puntitos</b> a la derecha del reproductor y selecciona <b>"Descargar"</b>.
-                        </p>
+            statusText.innerHTML = `
+                <div style="margin-top: 15px; padding: 15px; background: rgba(3, 218, 198, 0.1); border-radius: 8px; border: 1px solid #03dac6;">
+                    <p style="color: #fff; margin-bottom: 10px;">✅ ¡Enlace preparado!</p>
+                    <p style="color: #a2a5b5; font-size: 0.9rem; margin-bottom: 10px;">Para evitar bloqueos del servidor, usa nuestra herramienta externa aliada:</p>
+                    
+                    <a href="https://cobalt.tools/?u=${encodeURIComponent(urlInput)}" target="_blank" style="display: inline-block; padding: 12px 20px; background: #03dac6; color: #000; font-weight: bold; text-decoration: none; border-radius: 5px; width: 100%; text-align: center; margin-bottom: 10px;">🚀 OBTENER AUDIO AHORA</a>
+                    
+                    <div style="text-align: left; color: #a2a5b5; font-size: 0.85rem;">
+                        <b>Pasos rápidos:</b><br>
+                        1. Haz clic en el botón de arriba.<br>
+                        2. En la nueva pestaña, selecciona <b>Audio</b> y descarga.<br>
+                        3. Vuelve aquí y arrastra el archivo a la caja "2. Subir audio".
                     </div>
-                `;
-
-            } catch (error) {
-                statusText.style.color = "#cf6679"; 
-                statusText.innerText = `❌ Error: ${error.message}`;
-            }
+                </div>
+            `;
         });
     }
 
