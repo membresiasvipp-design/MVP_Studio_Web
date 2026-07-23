@@ -1,13 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     
     // ==========================================
-    // 1. SISTEMA DE AUTENTICACIÓN (RECUERDA LA SESIÓN)
+    // 1. SISTEMA DE AUTENTICACIÓN (LICENCIA UNIVERSAL)
     // ==========================================
     const activateBtn = document.getElementById("activate-btn");
     const activationScreen = document.getElementById("activation-screen");
     const mainScreen = document.getElementById("main-screen");
 
-    // Al iniciar, verificamos si ya ingresaste la clave correcta antes
     if (localStorage.getItem("MVP_LICENCIA") === "MVP-STUDIO") {
         if (activationScreen && mainScreen) {
             activationScreen.classList.remove("active");
@@ -15,7 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
             mainScreen.classList.remove("hidden");
         }
     } else {
-        // Si hay sesiones antiguas o bugueadas, las limpiamos para empezar fresco
         localStorage.clear();
         if (activationScreen && mainScreen) {
             activationScreen.classList.remove("hidden");
@@ -26,7 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (activateBtn) {
         activateBtn.addEventListener("click", () => {
-            // Convertimos todo a mayúsculas para que acepte "mvp-studio" o "MVP-STUDIO"
             const codeInput = document.getElementById("license-code").value.trim().toUpperCase();
             const errorMsg = document.getElementById("error-msg");
             
@@ -37,10 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             
             if (codeInput === "MVP-STUDIO") {
-                // Borramos todo rastro viejo y guardamos la llave maestra definitiva
                 localStorage.clear();
                 localStorage.setItem("MVP_LICENCIA", "MVP-STUDIO");
-                
                 activationScreen.classList.remove("active");
                 activationScreen.classList.add("hidden");
                 mainScreen.classList.remove("hidden");
@@ -80,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
             statusText.innerHTML = "⏳ Consultando la API (Rotando llave de seguridad)...";
 
             try {
-                // Selecciona una llave aleatoria para no gastar siempre la misma
                 const randomIndex = Math.floor(Math.random() * rapidApiKeys.length);
                 const selectedKey = rapidApiKeys[randomIndex];
 
@@ -97,9 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const dataApi = await resApi.json();
 
                 if (!resApi.ok || dataApi.message === "You are not subscribed to this API.") {
-                    throw new Error(`RapidAPI: Límite mensual alcanzado con esta llave o no estás suscrito.`);
+                    throw new Error(`RapidAPI: Límite alcanzado o error de suscripción con esta llave.`);
                 }
-
                 if (dataApi.success === false) {
                     throw new Error(dataApi.error || "La API rechazó el enlace.");
                 }
@@ -134,16 +127,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 3. SUBIDA Y ARRASTRE DE ARCHIVOS (CAJA 2 REPARADA AL 100%)
+    // 3. SUBIDA Y ARRASTRE DE ARCHIVOS (INTERFAZ)
     // ==========================================
     const fileInputs = document.querySelectorAll('input[type="file"]');
     
     fileInputs.forEach(input => {
-        // Encontramos la caja contenedora real (ya sea por clase o por su padre directo)
         const dropZone = input.closest('.drop-zone') || input.parentElement;
 
         if (dropZone) {
-            // Bloqueamos el navegador para que no abra el archivo en una pestaña nueva
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 dropZone.addEventListener(eventName, (e) => {
                     e.preventDefault();
@@ -151,7 +142,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, false);
             });
 
-            // Luces al arrastrar
             ['dragenter', 'dragover'].forEach(eventName => {
                 dropZone.addEventListener(eventName, () => {
                     dropZone.style.borderColor = "#03dac6";
@@ -159,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, false);
             });
 
-            // Apagar luces al soltar
             ['dragleave', 'drop'].forEach(eventName => {
                 dropZone.addEventListener(eventName, () => {
                     dropZone.style.borderColor = "";
@@ -167,36 +156,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, false);
             });
 
-            // Atrapamos el archivo al soltarlo
             dropZone.addEventListener('drop', (e) => {
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    input.files = e.dataTransfer.files; // Forzamos al sistema a aceptar el archivo
-                    // Le decimos a la página que el archivo cambió
+                    input.files = e.dataTransfer.files;
                     const event = new Event('change', { bubbles: true });
                     input.dispatchEvent(event);
                 }
             });
         }
 
-        // Lógica visual para cuando el archivo ya está adentro (por clic o por arrastre)
         input.addEventListener('change', (e) => {
             if (e.target.files && e.target.files.length > 0) {
                 const fileName = e.target.files[0].name;
-                
-                // Buscamos si hay un texto tipo "p" para reemplazar
                 let textDisplay = dropZone ? (dropZone.querySelector('.file-name') || dropZone.querySelector('p')) : null;
                 
                 if (textDisplay) {
-                    textDisplay.innerText = `✅ Archivo cargado: ${fileName}`;
+                    textDisplay.innerText = `✅ Archivo listo para procesar: ${fileName}`;
                     textDisplay.style.color = "#03dac6";
                     textDisplay.style.fontWeight = "bold";
-                } else if (dropZone) {
-                    // Si no había texto antes, lo creamos forzosamente para confirmar
-                    const successMsg = document.createElement('p');
-                    successMsg.innerText = `✅ Archivo cargado: ${fileName}`;
-                    successMsg.style.color = "#03dac6";
-                    successMsg.style.fontWeight = "bold";
-                    dropZone.appendChild(successMsg);
                 }
             }
         });
@@ -242,4 +219,64 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // ==========================================
+    // 5. PROCESAMIENTO DE IA (RECONEXIÓN CON EL BACKEND)
+    // ==========================================
+    const processForm = document.getElementById("process-form");
+    
+    if (processForm) {
+        processForm.addEventListener("submit", async (e) => {
+            e.preventDefault(); // Evitamos que la página se recargue
+            
+            const fileInput = document.getElementById("audio-upload");
+            const statusDiv = document.getElementById("processing-status");
+            const resultDiv = document.getElementById("results-area");
+
+            if (!fileInput || fileInput.files.length === 0) {
+                alert("Por favor, sube un archivo de audio primero.");
+                return;
+            }
+
+            // Mostramos el estado de carga
+            if (statusDiv) {
+                statusDiv.classList.remove("hidden");
+                statusDiv.innerHTML = "⏳ Enviando archivo al servidor para separación con IA...";
+                statusDiv.style.color = "#03dac6";
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                // Aquí nos comunicamos con tu servidor Python (main.py)
+                const response = await fetch("/api/procesar", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error("Error en el servidor al procesar el audio.");
+                }
+
+                const data = await response.json();
+                
+                // Mostramos los resultados devueltos por Python
+                if (statusDiv) statusDiv.innerHTML = "✅ ¡Procesamiento completado!";
+                
+                if (resultDiv && data.stems) {
+                    resultDiv.classList.remove("hidden");
+                    // Aquí asumimos que Python devuelve un HTML o los enlaces de los audios separados
+                    resultDiv.innerHTML = data.html || `
+                        <p style="color:#03dac6;">Pistas generadas correctamente. Revisa tus archivos.</p>
+                    `;
+                }
+
+            } catch (error) {
+                if (statusDiv) {
+                    statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                    statusDiv.style.color = "#cf6679";
+                }
+            }
+        });
+    }
 });
