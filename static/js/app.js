@@ -1,12 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
     
     // ==========================================
-    // 1. SISTEMA DE AUTENTICACIÓN (LICENCIA UNIVERSAL)
+    // 1. AUTENTICACIÓN UNIVERSAL (CONECTADA AL BACKEND)
     // ==========================================
     const activateBtn = document.getElementById("activate-btn");
     const activationScreen = document.getElementById("activation-screen");
     const mainScreen = document.getElementById("main-screen");
 
+    // Verificar sesión guardada
     if (localStorage.getItem("MVP_LICENCIA") === "MVP-STUDIO") {
         if (activationScreen && mainScreen) {
             activationScreen.classList.remove("active");
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     if (activateBtn) {
-        activateBtn.addEventListener("click", () => {
+        activateBtn.addEventListener("click", async () => {
             const codeInput = document.getElementById("license-code").value.trim().toUpperCase();
             const errorMsg = document.getElementById("error-msg");
             
@@ -33,22 +34,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             
-            if (codeInput === "MVP-STUDIO") {
-                localStorage.clear();
-                localStorage.setItem("MVP_LICENCIA", "MVP-STUDIO");
-                activationScreen.classList.remove("active");
-                activationScreen.classList.add("hidden");
-                mainScreen.classList.remove("hidden");
-            } else {
+            errorMsg.innerText = "Verificando licencia...";
+            errorMsg.style.color = "#03dac6";
+            errorMsg.classList.remove("hidden");
+
+            try {
+                // Conexión con tu backend en Python (main.py)
+                const res = await fetch("/api/activar", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({codigo: codeInput})
+                });
+                
+                if (res.ok) {
+                    localStorage.setItem("MVP_LICENCIA", "MVP-STUDIO");
+                    activationScreen.classList.remove("active");
+                    activationScreen.classList.add("hidden");
+                    mainScreen.classList.remove("hidden");
+                } else {
+                    errorMsg.style.color = "#cf6679";
+                    errorMsg.innerText = "Código incorrecto. Usa MVP-STUDIO.";
+                }
+            } catch(e) {
                 errorMsg.style.color = "#cf6679";
-                errorMsg.innerText = "Código incorrecto. La licencia universal es MVP-STUDIO.";
-                errorMsg.classList.remove("hidden");
+                errorMsg.innerText = "Error de conexión con el servidor local.";
             }
         });
     }
 
     // ==========================================
-    // 2. DESCARGA DE YOUTUBE (MULTIPLICADOR DE APIS)
+    // 2. DESCARGA DE YOUTUBE (5 APIS INTEGRADAS)
     // ==========================================
     const rapidApiKeys = [
         "a6c7462bcamsh853ede28c74c558p17d9cdjsn576bba33cd9c",
@@ -72,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             statusText.classList.remove("hidden");
             statusText.style.color = "#03dac6"; 
-            statusText.innerHTML = "⏳ Consultando la API (Rotando llave de seguridad)...";
+            statusText.innerHTML = "⏳ Consultando la API (Rotando llave)...";
 
             try {
                 const randomIndex = Math.floor(Math.random() * rapidApiKeys.length);
@@ -91,24 +106,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 const dataApi = await resApi.json();
 
                 if (!resApi.ok || dataApi.message === "You are not subscribed to this API.") {
-                    throw new Error(`RapidAPI: Límite alcanzado o error de suscripción con esta llave.`);
+                    throw new Error("Límite alcanzado con esta llave de RapidAPI.");
                 }
                 if (dataApi.success === false) {
                     throw new Error(dataApi.error || "La API rechazó el enlace.");
                 }
 
-                let finalLink = null;
-                if (dataApi.link) finalLink = dataApi.link;
-                else if (dataApi.download) finalLink = dataApi.download;
-                else if (dataApi.url) finalLink = dataApi.url;
-                else if (dataApi.mp3) finalLink = dataApi.mp3;
-                else {
-                    statusText.innerHTML = `
-                        <div style="margin-top: 15px; padding: 15px; background: rgba(207, 102, 121, 0.1); border-radius: 8px; border: 1px solid #cf6679; overflow-x: auto;">
-                            <p style="color: #cf6679; margin-bottom: 10px;">⚠️ API OK, pero formato distinto:</p>
-                            <pre style="color: #fff; font-size: 0.8rem;">${JSON.stringify(dataApi, null, 2)}</pre>
-                        </div>
-                    `;
+                let finalLink = dataApi.link || dataApi.download || dataApi.url || dataApi.mp3;
+                
+                if (!finalLink) {
+                    statusText.innerHTML = `<p style="color: #cf6679;">⚠️ Error de formato en la API.</p>`;
                     return;
                 }
 
@@ -118,7 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         <a href="${finalLink}" target="_blank" style="display: inline-block; padding: 12px 20px; background: #03dac6; color: #000; font-weight: bold; text-decoration: none; border-radius: 5px; width: 100%; text-align: center;">⬇️ DESCARGAR MP3 AHORA</a>
                     </div>
                 `;
-
             } catch (error) {
                 statusText.style.color = "#cf6679"; 
                 statusText.innerText = `❌ Error: ${error.message}`;
@@ -127,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 3. SUBIDA Y ARRASTRE DE ARCHIVOS (INTERFAZ)
+    // 3. SUBIDA MANUAL DE ARCHIVOS (CAJA 2)
     // ==========================================
     const fileInputs = document.querySelectorAll('input[type="file"]');
     
@@ -171,112 +177,73 @@ document.addEventListener("DOMContentLoaded", () => {
                 let textDisplay = dropZone ? (dropZone.querySelector('.file-name') || dropZone.querySelector('p')) : null;
                 
                 if (textDisplay) {
-                    textDisplay.innerText = `✅ Archivo listo para procesar: ${fileName}`;
+                    textDisplay.innerText = `✅ Archivo listo: ${fileName}`;
                     textDisplay.style.color = "#03dac6";
-                    textDisplay.style.fontWeight = "bold";
                 }
             }
         });
     });
 
     // ==========================================
-    // 4. CONTROL DE MENÚS Y VENTANAS MODALES
+    // 4. PROCESAMIENTO DE IA (CONEXIÓN AL BACKEND)
     // ==========================================
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            navItems.forEach(n => n.classList.remove('active'));
-            item.classList.add('active');
-            
-            document.querySelectorAll('.view-section').forEach(v => {
-                v.classList.add('hidden');
-                v.classList.remove('active');
-            });
-            
-            const targetId = item.getAttribute('data-target');
-            if(targetId) {
-                const targetView = document.getElementById(targetId);
-                if(targetView) {
-                    targetView.classList.remove('hidden');
-                    targetView.classList.add('active');
-                }
-            }
-        });
-    });
-
-    document.querySelectorAll('.modal-trigger').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modalId = btn.getAttribute('data-modal');
-            if(modalId) {
-                document.getElementById(modalId).classList.remove('hidden');
-            }
-        });
-    });
-
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.target.closest('.modal').classList.add('hidden');
-        });
-    });
-
-    // ==========================================
-    // 5. PROCESAMIENTO DE IA (RECONEXIÓN CON EL BACKEND)
-    // ==========================================
-    const processForm = document.getElementById("process-form");
+    const processForm = document.getElementById("process-form"); // Asegúrate de que tu form tenga este ID en HTML
+    const processBtn = document.getElementById("process-btn"); // O si usas un botón suelto
     
-    if (processForm) {
-        processForm.addEventListener("submit", async (e) => {
-            e.preventDefault(); // Evitamos que la página se recargue
+    // Función que envía el archivo a Python
+    const handleProcess = async (e) => {
+        if(e) e.preventDefault();
+        
+        const fileInput = document.querySelector('input[type="file"]');
+        const statusDiv = document.getElementById("processing-status"); // Asegúrate de tener este div en tu HTML
+        const resultDiv = document.getElementById("results-area"); // Asegúrate de tener este div en tu HTML
+
+        if (!fileInput || fileInput.files.length === 0) {
+            alert("Por favor, sube un archivo de audio primero.");
+            return;
+        }
+
+        if (statusDiv) {
+            statusDiv.classList.remove("hidden");
+            statusDiv.innerHTML = "⏳ Enviando archivo a la Inteligencia Artificial...";
+            statusDiv.style.color = "#03dac6";
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        try {
+            // Llama a tu motor de Python original
+            const response = await fetch("/api/procesar", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error("El motor de Python devolvió un error.");
+            }
+
+            const data = await response.json();
             
-            const fileInput = document.getElementById("audio-upload");
-            const statusDiv = document.getElementById("processing-status");
-            const resultDiv = document.getElementById("results-area");
-
-            if (!fileInput || fileInput.files.length === 0) {
-                alert("Por favor, sube un archivo de audio primero.");
-                return;
+            if (statusDiv) statusDiv.innerHTML = "✅ ¡Separación completada!";
+            
+            // Muestra los resultados devueltos por Python
+            if (resultDiv) {
+                resultDiv.classList.remove("hidden");
+                resultDiv.innerHTML = data.html || `<p style="color:#03dac6;">Pistas generadas. Revisa tu carpeta de descargas.</p>`;
             }
 
-            // Mostramos el estado de carga
+        } catch (error) {
             if (statusDiv) {
-                statusDiv.classList.remove("hidden");
-                statusDiv.innerHTML = "⏳ Enviando archivo al servidor para separación con IA...";
-                statusDiv.style.color = "#03dac6";
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                statusDiv.style.color = "#cf6679";
             }
+        }
+    };
 
-            const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
-
-            try {
-                // Aquí nos comunicamos con tu servidor Python (main.py)
-                const response = await fetch("/api/procesar", {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    throw new Error("Error en el servidor al procesar el audio.");
-                }
-
-                const data = await response.json();
-                
-                // Mostramos los resultados devueltos por Python
-                if (statusDiv) statusDiv.innerHTML = "✅ ¡Procesamiento completado!";
-                
-                if (resultDiv && data.stems) {
-                    resultDiv.classList.remove("hidden");
-                    // Aquí asumimos que Python devuelve un HTML o los enlaces de los audios separados
-                    resultDiv.innerHTML = data.html || `
-                        <p style="color:#03dac6;">Pistas generadas correctamente. Revisa tus archivos.</p>
-                    `;
-                }
-
-            } catch (error) {
-                if (statusDiv) {
-                    statusDiv.innerHTML = `❌ Error: ${error.message}`;
-                    statusDiv.style.color = "#cf6679";
-                }
-            }
-        });
+    if (processForm) {
+        processForm.addEventListener("submit", handleProcess);
+    } else if (processBtn) {
+        processBtn.addEventListener("click", handleProcess);
     }
 });
