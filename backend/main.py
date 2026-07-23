@@ -1,54 +1,87 @@
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel
+# backend/main.py
 import os
+import shutil
+import uuid
+import threading
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
-# 1. ESTO ES LO QUE FALTABA: Inicializar la aplicación ANTES de usarla
-app = FastAPI(title="MVP Studio")
+print("[*] Cargando módulos internos para la Nube...")
 
-# 2. Definir los modelos de datos
-class Licencia(BaseModel):
-    codigo: str
+# 1. Ya NO importamos auth_sheets
+from backend.core.audio_manager import descargar_youtube
+from backend.core.ai_separator import ai_engine, OUTPUT_DIR
 
-# 3. La ruta de activación que agregamos
+app = FastAPI()
+
+# --- RUTAS SEGURAS PARA SERVIDOR WEB (LINUX) ---
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+LICENSE_FILE = DATA_DIR / "sys_token.dat"
+
+DOWNLOADS_DIR = Path("descargas")
+DOWNLOADS_DIR.mkdir(exist_ok=True)
+
+class ActivationRequest(BaseModel): codigo: str
+class DownloadRequest(BaseModel): url: str
+class ProcessRequest(BaseModel):
+    file_path: str
+    mode: str
+
+background_tasks = {}
+
+@app.get("/api/status")
+def check_status(): 
+    return {"activated": LICENSE_FILE.exists()}
+
+# 2. RUTAS DE ACTIVACIÓN REPARADA (Licencia Universal)
 @app.post("/api/activar")
-async def activar_licencia(licencia: Licencia):
-    # Convertimos a mayúsculas para aceptar "mvp-studio" o "MVP-STUDIO"
-    if licencia.codigo.strip().upper() == "MVP-STUDIO":
-        return {"status": "success", "message": "Licencia validada correctamente"}
-    else:
-        raise HTTPException(status_code=401, detail="Código incorrecto")
+def activar_software(request: ActivationRequest):
+    if request.codigo.strip().upper() == "MVP-STUDIO":
+        with open(LICENSE_FILE, "w") as f: f.write("ACTIVATED=TRUE")
+        return {"status": "success"}
+    raise HTTPException(status_code=401, detail="Código inválido.")
 
-# 4. Tu ruta de procesamiento de Inteligencia Artificial
-@app.post("/api/procesar")
-async def procesar_audio(file: UploadFile = File(...)):
+@app.post("/api/descargar")
+def descargar_audio(request: DownloadRequest):
+    print(f"[*] Petición de descarga web: {request.url}")
+    res = descargar_youtube(request.url)
+    if res["status"] == "success": return res
+    raise HTTPException(status_code=400, detail=res["message"])
+
+@app.post("/api/upload")
+async def upload_audio(file: UploadFile = File(...)):
+    print(f"[*] Archivo subido: {file.filename}")
     try:
-        # Aquí es donde llamas a tu script de separación (ai_separator.py)
-        # Ejemplo:
-        # from core.ai_separator import procesar_archivo
-        # resultado = procesar_archivo(file.file)
-        
-        return JSONResponse(content={
-            "status": "success", 
-            "html": "<p style='color:#03dac6;'>Procesamiento de IA iniciado correctamente. Revisa tus archivos generados.</p>"
-        })
-    except Exception as e:
+        file_path = DOWNLOADS_DIR / file.filename
+        with open(file_path, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
+        return {"status": "success", "file_path": str(file_path), "title": file.filename}
+    except Exception as e: 
         raise HTTPException(status_code=500, detail=str(e))
 
-# 5. Montar los archivos estáticos (Frontend)
-# Buscamos la carpeta 'static' que está un nivel arriba de 'backend'
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-static_dir = os.path.join(base_dir, "static")
+@app.post("/api/procesar")
+def procesar_audio(request: ProcessRequest):
+    if not os.path.exists(request.file_path):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado en el servidor.")
+    
+    task_id = str(uuid.uuid4())
+    background_tasks[task_id] = {"status": "processing", "message": "Iniciando IA en MVSEP..."}
+    
+    threading.Thread(target=ai_engine.process_audio_task, args=(request.file_path, request.mode, task_id, background_tasks)).start()
+    return {"status": "success", "task_id": task_id}
 
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+@app.get("/api/task/{task_id}")
+def get_task_status(task_id: str):
+    if task_id not in background_tasks: raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    return background_tasks[task_id]
 
-# 6. Ruta principal que carga tu index.html
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    index_path = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>Error: No se encontró la carpeta estática o el index.html</h1>")
+# Montamos las carpetas estáticas normales
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/output", StaticFiles(directory=str(OUTPUT_DIR)), name="output")
+
+@app.get("/")
+def read_root(): 
+    return FileResponse("static/index.html")
