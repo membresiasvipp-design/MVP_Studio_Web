@@ -2,193 +2,243 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MVP Studio AI</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <!-- CRÍTICO PARA ANDROID Y CELULARES -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MVP Studio Web</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #121212; color: #ffffff; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        .card { background: #1e1e1e; border-radius: 12px; padding: 25px; width: 100%; max-width: 500px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        h1, h2 { text-align: center; color: #bb86fc; margin-bottom: 20px; font-size: 1.5rem; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; color: #b0b0b0; font-size: 0.9rem; }
+        input[type="text"], select, input[type="file"] { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: #fff; font-size: 16px; margin-bottom: 10px; }
+        
+        button { width: 100%; padding: 14px; border: none; border-radius: 6px; background: #bb86fc; color: #000; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #9965f4; }
+        
+        .hidden { display: none; }
+        .status-msg { margin-top: 15px; text-align: center; font-size: 0.9rem; color: #03dac6; word-break: break-word; }
+        .error-msg { color: #cf6679; }
+        .divider { text-align: center; margin: 15px 0; color: #666; font-size: 0.8rem; }
+        
+        /* REGLAS RESPONSIVAS ANDROID */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .card { padding: 15px; border-radius: 8px; }
+            h1 { font-size: 1.3rem; }
+            button { padding: 16px; font-size: 17px; } /* Más fácil de pulsar */
+        }
+    </style>
 </head>
-<body class="dark-mode">
-    <!-- PANTALLA DE ACTIVACIÓN -->
-    <div id="activation-screen" class="screen active">
-        <div class="activation-box">
-            <!-- Logo Vectorizado MVPP -->
-            <svg viewBox="0 0 120 40" style="width: 100px; height: auto; margin: 0 auto 10px auto; display: block;">
-                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="'Arial Black', Impact, sans-serif" font-size="38" font-weight="900" fill="url(#purple-grad)" letter-spacing="-2">MVPP</text>
-            </svg>
-            <p>Ingresa tu licencia para acceder al estudio.</p>
-            <input type="text" id="license-code" placeholder="XXXX-XXXX-XXXX">
-            <button id="activate-btn" class="btn-primary">Autenticar Sistema</button>
-            <p id="error-msg" class="error-msg hidden"></p>
-        </div>
-    </div>
+<body>
 
-    <!-- APLICACIÓN PRINCIPAL -->
-    <div id="main-screen" class="app-container hidden">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <!-- Logo Vectorizado MVPP para Sidebar -->
-                <svg viewBox="0 0 120 40" style="width: 60px; height: auto; flex-shrink: 0;">
-                    <text x="0" y="32" font-family="'Arial Black', Impact, sans-serif" font-size="38" font-weight="900" fill="url(#purple-grad)" letter-spacing="-2">MVPP</text>
-                </svg>
-                <div class="logo-text" style="margin-left: 5px;">Studio <span class="gradient-text">AI</span><br><span>Tu estudio de audio con IA</span></div>
+    <div class="card">
+        <!-- PANTALLA 1: VALIDACIÓN DE CÓDIGO -->
+        <div id="sec-login">
+            <h1>Activar MVP Studio</h1>
+            <div class="form-group">
+                <label for="licencia">Ingresa tu código de acceso:</label>
+                <input type="text" id="licencia" placeholder="Ej: MVP-1234">
             </div>
+            <button onclick="validarLicencia()">Ingresar</button>
+            <div id="login-status" class="status-msg error-msg"></div>
+        </div>
+
+        <!-- PANTALLA 2: APLICACIÓN PRINCIPAL -->
+        <div id="sec-main" class="hidden">
+            <h2>MVP Studio IA</h2>
             
-            <nav class="sidebar-nav">
-                <ul>
-                    <li class="nav-item active" data-target="view-inicio"><span class="icon">🏠</span> Inicio</li>
-                    <li class="nav-item" data-target="view-historial"><span class="icon">⏱</span> Historial</li>
-                    <li class="nav-item" data-target="view-proyectos"><span class="icon">📁</span> Mis Proyectos</li>
-                    <li class="spacer"></li>
-                    <li class="modal-trigger" data-modal="modal-ajustes"><span class="icon">⚙</span> Ajustes</li>
-                    <li class="modal-trigger" data-modal="modal-ayuda"><span class="icon">❓</span> Ayuda</li>
-                    <li class="modal-trigger" data-modal="modal-acerca"><span class="icon">ℹ</span> Acerca de</li>
-                </ul>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="app-version">
-                    <div class="version-icon">🎵</div>
-                    <div>
-                        <strong>MVPP Studio <span class="gradient-text">AI</span></strong>
-                        <span>v2.0 Pro</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <header class="topbar">
-                <div class="connection-status"><span class="dot"></span> CONECTADO</div>
-                <div class="topbar-actions">
-                    <button class="icon-btn modal-trigger" data-modal="modal-ayuda">❓</button>
-                    <button class="icon-btn modal-trigger" data-modal="modal-ajustes">⚙</button>
-                    <button id="theme-toggle" class="icon-btn">🌙</button>
-                </div>
-            </header>
-
-            <!-- VISTA: INICIO -->
-            <div id="view-inicio" class="workspace view-section active">
-                <div class="welcome-section">
-                    <h1>¡Bienvenido a MVPP Studio <span class="gradient-text">AI</span>!</h1>
-                    <p>Tu herramienta todo en uno para audio. Descarga, separa, crea y disfruta.</p>
-                </div>
-
-                <div class="action-grid">
-                    <div class="action-card">
-                        <div class="card-header"><span class="icon-circle">🔗</span> 1. Descargar audio con URL</div>
-                        <input type="text" id="youtube-url" class="input-field" placeholder="Pega aquí la URL del audio...">
-                        <button id="download-btn" class="btn-primary w-full"><span class="icon">📥</span> Descargar audio</button>
-                        <p id="download-status" class="status-text hidden"></p>
-                    </div>
-
-                    <div class="action-card">
-                        <div class="card-header"><span class="icon-circle">☁</span> 2. Subir audio</div>
-                        <div class="upload-zone" id="drop-zone">
-                            <input type="file" id="file-input" accept=".mp3,.wav,.flac,.m4a" class="hidden">
-                            <div id="drop-content">
-                                <span class="cloud-icon">☁</span>
-                                <p>Arrastra tu archivo aquí<br>o haz clic para seleccionar</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="action-card task-card">
-                        <div class="card-header"><span class="icon-circle stars">✨</span> 3. Elegir tarea</div>
-                        <div class="task-buttons">
-                            <button id="btn-karaoke" class="btn-task gradient-btn" disabled>🎤 Generar Karaoke (2)</button>
-                            <button id="btn-stems" class="btn-task outline-btn" disabled>📊 Generar Stems (7)</button>
-                        </div>
-                        <p id="process-status" class="status-text hidden" style="margin-top:10px;"></p>
-                    </div>
-                </div>
-
-                <section class="results-section">
-                    <div class="results-header">
-                        <div class="results-title">
-                            <svg viewBox="0 0 24 24" width="24" height="24" stroke="url(#purple-grad)" stroke-width="2" fill="none"><path d="M3 12h3l3-9 6 18 3-9h3"/></svg>
-                            <h2>Resultados (Waveform Pro)</h2>
-                        </div>
-                    </div>
-                    <p class="subtitle">Tus archivos se guardan automáticamente en: <strong>Música / MVP Studio AI / Resultados</strong></p>
-
-                    <div class="tabs">
-                        <button class="tab active" data-filter="all">Todos</button>
-                        <button class="tab" data-filter="karaoke">Karaokes</button>
-                        <button class="tab" data-filter="stems">Stems</button>
-                    </div>
-
-                    <div id="results-container">
-                        <div class="empty-state" id="empty-state">Esperando procesamiento...</div>
-                    </div>
-                </section>
+            <!-- Opción YouTube -->
+            <div class="form-group">
+                <label>1. Desde Enlace de YouTube:</label>
+                <input type="text" id="yt-url" placeholder="https://www.youtube.com/watch?v=...">
+                <button onclick="descargarYT()">Obtener Audio YT</button>
             </div>
 
-            <!-- VISTA: HISTORIAL -->
-            <div id="view-historial" class="workspace view-section hidden">
-                <div class="welcome-section">
-                    <h1>Historial de <span class="gradient-text">Procesamientos</span></h1>
-                    <p>Aquí encontrarás todas las pistas que has generado anteriormente en este equipo.</p>
-                </div>
-                <div id="history-container">
-                    <div class="empty-state">No hay historial disponible.</div>
-                </div>
+            <div class="divider">--- O SUBE TU PROPIO ARCHIVO ---</div>
+
+            <!-- Opción Archivo Local -->
+            <div class="form-group">
+                <label>Subir Audio desde tu Celular/PC:</label>
+                <input type="file" id="local-file" accept="audio/*">
+                <button onclick="subirArchivoLocal()" style="background: #03dac6;">Subir Archivo Local</button>
             </div>
 
-            <!-- VISTA: PROYECTOS -->
-            <div id="view-proyectos" class="workspace view-section hidden">
-                <div class="welcome-section">
-                    <h1>Tus <span class="gradient-text">Proyectos</span></h1>
-                    <p>Espacio reservado para gestionar mezclas multipista completas.</p>
-                </div>
-                <div class="empty-state">No has guardado ningún proyecto aún.</div>
-            </div>
-        </main>
-    </div>
+            <hr style="border-color: #333; margin: 20px 0;">
 
-    <!-- MODALES FLOTANTES -->
-    <div id="modal-ajustes" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>⚙ Ajustes del Sistema</h2>
-            <p><strong>Ruta de guardado:</strong> Música / MVP Studio AI</p>
-            <p><strong>Calidad de extracción:</strong> WAV (Sin pérdida)</p>
-            <p><strong>Motor IA:</strong> MVP</p>
-            <button class="btn-primary" style="margin-top: 20px; width: 100%;">Guardar Preferencias</button>
+            <!-- Separación IA -->
+            <div class="form-group">
+                <label for="mode">2. Modo de Separación IA:</label>
+                <select id="mode">
+                    <option value="2stems">Voz + Pista (2 Stems)</option>
+                    <option value="4stems">Voz + Batería + Bajo + Otros (4 Stems)</option>
+                </select>
+            </div>
+
+            <button id="btn-procesar" onclick="procesarIA()" disabled style="opacity: 0.5;">Iniciar Separación IA</button>
+
+            <div id="main-status" class="status-msg"></div>
+            <div id="results" style="margin-top:20px;"></div>
         </div>
     </div>
 
-    <div id="modal-ayuda" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>❓ Centro de Ayuda</h2>
-            <p>1. <strong>URL de YouTube:</strong> Pega el enlace y presiona descargar. La IA limpiará el formato automáticamente.</p>
-            <p>2. <strong>Carga Local:</strong> Puedes arrastrar MP3, WAV, FLAC o M4A directamente.</p>
-            <p>3. <strong>Stems vs Karaoke:</strong> Karaoke extrae 2 pistas (Voz e Instrumental). Stems extrae 7 pistas (Batería, Bajo, Piano, etc).</p>
-        </div>
-    </div>
+    <script>
+        let currentFilePath = "";
 
-    <div id="modal-acerca" class="modal hidden">
-        <div class="modal-content" style="text-align: center;">
-            <span class="close-modal">&times;</span>
-            <!-- Logo Vectorizado MVPP para Modal -->
-            <svg viewBox="0 0 120 40" style="width: 100px; height: auto; margin: 0 auto 15px auto; display: block;">
-                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="'Arial Black', Impact, sans-serif" font-size="38" font-weight="900" fill="url(#purple-grad)" letter-spacing="-2">MVPP</text>
-            </svg>
-            <h2>MVPP Studio <span class="gradient-text">AI</span></h2>
-            <p>Versión 2.0 Pro</p>
-            <p style="color: var(--text-muted); font-size: 13px; margin-top: 15px;">Software impulsado por IA para el aislamiento y producción de audio de grado de estudio.</p>
-        </div>
-    </div>
+        // Al cargar en Android/PC, verifica si ESTE navegador específico está activado
+        window.onload = function() {
+            if (localStorage.getItem("MVP_WEB_ACTIVE") === "true") {
+                mostrarMain();
+            }
+        };
 
-    <!-- Definición del Degradado Vectorial (Se aplica a los textos MVPP y elementos de la interfaz) -->
-    <svg width="0" height="0">
-        <linearGradient id="purple-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop stop-color="#8B5CF6" offset="0%" />
-            <stop stop-color="#6366F1" offset="100%" />
-        </linearGradient>
-    </svg>
+        async function validarLicencia() {
+            const cod = document.getElementById("licencia").value.trim();
+            const status = document.getElementById("login-status");
+            if (!cod) return status.innerText = "Escribe un código válido.";
+            
+            status.innerText = "Verificando en Google Sheets...";
+            status.className = "status-msg";
 
-    <script src="/static/js/app.js"></script>
+            try {
+                const res = await fetch("/api/activar", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({codigo: cod})
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    localStorage.setItem("MVP_WEB_ACTIVE", "true");
+                    mostrarMain();
+                } else {
+                    status.className = "status-msg error-msg";
+                    status.innerText = data.detail || "Código incorrecto o usado.";
+                }
+            } catch(e) {
+                status.className = "status-msg error-msg";
+                status.innerText = "Error de conexión con el servidor.";
+            }
+        }
+
+        function mostrarMain() {
+            document.getElementById("sec-login").classList.add("hidden");
+            document.getElementById("sec-main").classList.remove("hidden");
+        }
+
+        async function descargarYT() {
+            const url = document.getElementById("yt-url").value.trim();
+            const status = document.getElementById("main-status");
+            if (!url) return alert("Pega un enlace de YouTube.");
+
+            status.innerText = "Descargando desde YouTube...";
+            try {
+                const res = await fetch("/api/descargar", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({url: url})
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    currentFilePath = data.file_path;
+                    status.innerText = "✔ Audio descargado: " + data.title;
+                    activarBtnProcesar();
+                } else {
+                    status.innerText = "❌ " + data.detail;
+                }
+            } catch(e) {
+                status.innerText = "❌ Error de servidor al descargar.";
+            }
+        }
+
+        async function subirArchivoLocal() {
+            const fileInput = document.getElementById("local-file");
+            const status = document.getElementById("main-status");
+            if (!fileInput.files[0]) return alert("Selecciona un archivo de tu celular/PC.");
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            status.innerText = "Subiendo archivo...";
+            try {
+                const res = await fetch("/api/upload", { method: "POST", body: formData });
+                const data = await res.json();
+
+                if (res.ok) {
+                    currentFilePath = data.file_path;
+                    status.innerText = "✔ Archivo cargado correctamente.";
+                    activarBtnProcesar();
+                } else {
+                    status.innerText = "❌ Error al subir archivo.";
+                }
+            } catch(e) {
+                status.innerText = "❌ Error de conexión al subir.";
+            }
+        }
+
+        function activarBtnProcesar() {
+            const btn = document.getElementById("btn-procesar");
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        }
+
+        async function procesarIA() {
+            const mode = document.getElementById("mode").value;
+            const status = document.getElementById("main-status");
+            status.innerText = "Enviando a procesar con IA en la nube...";
+
+            try {
+                const res = await fetch("/api/procesar", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({file_path: currentFilePath, mode: mode})
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    monitorearTarea(data.task_id);
+                } else {
+                    status.innerText = "❌ Error al iniciar IA.";
+                }
+            } catch(e) {
+                status.innerText = "❌ Error de conexión.";
+            }
+        }
+
+        function monitorearTarea(taskId) {
+            const status = document.getElementById("main-status");
+            const interval = setInterval(async () => {
+                const res = await fetch(`/api/task/${taskId}`);
+                const data = await res.json();
+
+                if (data.status === "completed") {
+                    clearInterval(interval);
+                    status.innerText = "🎉 ¡Separación Finalizada!";
+                    mostrarResultados(data.files);
+                } else if (data.status === "failed") {
+                    clearInterval(interval);
+                    status.innerText = "❌ Error en el proceso de IA.";
+                } else {
+                    status.innerText = "⏳ " + (data.message || "Procesando audio...");
+                }
+            }, 3000);
+        }
+
+        function mostrarResultados(files) {
+            const div = document.getElementById("results");
+            div.innerHTML = "<h3>Archivos Generados:</h3>";
+            for (const [key, val] of Object.entries(files)) {
+                div.innerHTML += `
+                    <div style="margin-bottom:10px;">
+                        <p style="text-transform:capitalize; font-size:12px;">${key}:</p>
+                        <audio controls src="/${val}" style="width:100%;"></audio>
+                    </div>`;
+            }
+        }
+    </script>
 </body>
 </html>
