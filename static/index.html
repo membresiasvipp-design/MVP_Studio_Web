@@ -2,281 +2,278 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- El secreto para que no se vea miniatura en Android -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MVP Studio | AI Audio Separator</title>
+    <title>MVP Studio AI</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+
+    <!-- INYECCIÓN DE CSS PARA MÓVILES Y TABLETS -->
     <style>
-        /* --- ESTILOS BASE (TIPO SOFTWARE PC) --- */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0f111a; color: #e0e0e0; height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
-        
-        /* Cabecera */
-        .header { background-color: #1a1c29; padding: 15px 30px; border-bottom: 2px solid #8a2be2; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 1.5rem; color: #ffffff; letter-spacing: 1px; }
-        .header span { color: #8a2be2; font-weight: bold; }
-
-        /* Contenedor Principal de la App */
-        .app-container { display: flex; flex: 1; overflow: hidden; }
-
-        /* Panel Izquierdo (Controles) */
-        .sidebar { width: 350px; background-color: #161824; padding: 25px; overflow-y: auto; border-right: 1px solid #2d3142; }
-        .sidebar h2 { font-size: 1.1rem; color: #a2a5b5; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .control-group { background: #1e2130; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #2d3142; }
-        .control-group label { display: block; font-size: 0.9rem; margin-bottom: 8px; color: #c0c0c0; }
-        input[type="text"], select, input[type="file"] { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #3d425c; background: #0f111a; color: #fff; margin-bottom: 10px; font-size: 0.95rem; }
-        
-        button { width: 100%; padding: 12px; border: none; border-radius: 5px; background: linear-gradient(90deg, #8a2be2, #4b0082); color: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: opacity 0.2s; margin-bottom: 10px; }
-        button:hover { opacity: 0.8; }
-        button:disabled { background: #3d425c; color: #888; cursor: not-allowed; }
-        .btn-alt { background: #03dac6; color: #000; }
-
-        /* Panel Derecho (Resultados) */
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; background-color: #0f111a; }
-        .status-box { background: #1e2130; border-left: 4px solid #8a2be2; padding: 15px; margin-bottom: 25px; border-radius: 4px; font-family: monospace; color: #03dac6; word-wrap: break-word; }
-        
-        /* Grid de Reproductores de Audio */
-        .stems-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .stem-card { background: #1a1c29; padding: 20px; border-radius: 10px; border: 1px solid #2d3142; display: flex; flex-direction: column; align-items: center; }
-        .stem-card h3 { color: #fff; margin-bottom: 15px; text-transform: capitalize; }
-        audio { width: 100%; outline: none; }
-
-        .hidden { display: none !important; }
-
-        /* Pantalla de Login Superpuesta */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f111a; display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .login-box { background: #1e2130; padding: 40px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #8a2be2; box-shadow: 0 0 30px rgba(138,43,226,0.2); }
-        .login-box h1 { margin-bottom: 20px; color: #fff; }
-
-        /* --- CSS RESPONSIVO PARA ANDROID / TABLETS --- */
-        @media (max-width: 850px) {
-            body { height: auto; min-height: 100vh; overflow-y: auto; }
-            .app-container { flex-direction: column; overflow: visible; }
+        /* Pantallas menores a 850px (Tablets y Celulares) */
+        @media screen and (max-width: 850px) {
+            .app-container {
+                flex-direction: column !important;
+                height: 100vh !important;
+                overflow-y: auto !important;
+            }
             
-            /* El panel izquierdo se vuelve la parte superior */
-            .sidebar { width: 100%; border-right: none; border-bottom: 2px solid #2d3142; padding: 15px; }
+            /* La barra lateral se vuelve un menú superior horizontal */
+            .sidebar {
+                width: 100% !important;
+                height: auto !important;
+                border-right: none !important;
+                border-bottom: 1px solid #333 !important;
+                padding: 10px !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
             
-            /* Ajustes táctiles */
-            button { padding: 15px; font-size: 1.1rem; }
-            input[type="text"], select { font-size: 16px; padding: 12px; } /* Evita el zoom en iOS/Android */
+            .sidebar-header {
+                justify-content: center !important;
+                margin-bottom: 10px !important;
+            }
             
-            .main-content { padding: 15px; }
-            .stems-grid { grid-template-columns: 1fr; } /* Reproductores en una sola columna vertical */
+            .sidebar-nav ul {
+                display: flex !important;
+                flex-direction: row !important;
+                overflow-x: auto !important;
+                white-space: nowrap !important;
+                padding-bottom: 5px !important;
+                scrollbar-width: none; /* Oculta barra en Firefox */
+            }
+            
+            .sidebar-nav ul::-webkit-scrollbar {
+                display: none; /* Oculta barra en Chrome/Safari */
+            }
+            
+            .sidebar-nav li {
+                display: inline-flex !important;
+                margin-right: 10px !important;
+                padding: 10px 15px !important;
+                border-radius: 8px !important;
+            }
+            
+            .spacer { display: none !important; }
+            .sidebar-footer { display: none !important; } /* Ocultar para ahorrar espacio */
+            
+            /* Contenido principal */
+            .main-content {
+                width: 100% !important;
+                padding: 15px !important;
+            }
+            
+            .action-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 20px !important;
+            }
+            
+            .task-buttons {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            
+            /* Cajas y Botones más grandes para tocar con el dedo */
+            button {
+                padding: 14px !important;
+                font-size: 16px !important;
+            }
+            
+            input[type="text"] {
+                font-size: 16px !important; /* Evita que el iPhone haga zoom */
+                padding: 12px !important;
+            }
+            
+            .activation-box, .modal-content {
+                width: 95% !important;
+                padding: 20px !important;
+            }
         }
     </style>
 </head>
-<body>
-
-    <!-- Pantalla de Activación -->
-    <div id="login-overlay">
-        <div class="login-box">
-            <h1>MVP <span>Studio</span></h1>
-            <p style="color: #a2a5b5; margin-bottom: 20px;">Ingresa tu código de licencia</p>
-            <input type="text" id="licencia" placeholder="Ej: MVSTUDIO-XXX">
-            <button onclick="validarLicencia()">Activar Software</button>
-            <p id="login-status" style="margin-top: 15px; color: #cf6679; font-size: 0.9rem;"></p>
+<body class="dark-mode">
+    <!-- PANTALLA DE ACTIVACIÓN -->
+    <div id="activation-screen" class="screen active">
+        <div class="activation-box">
+            <!-- Logo Vectorizado MVPP -->
+            <svg viewBox="0 0 120 40" style="width: 100px; height: auto; margin: 0 auto 10px auto; display: block;">
+                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="'Arial Black', Impact, sans-serif" font-size="38" font-weight="900" fill="url(#purple-grad)" letter-spacing="-2">MVPP</text>
+            </svg>
+            <p>Ingresa tu licencia para acceder al estudio.</p>
+            <input type="text" id="license-code" placeholder="XXXX-XXXX-XXXX">
+            <button id="activate-btn" class="btn-primary">Autenticar Sistema</button>
+            <p id="error-msg" class="error-msg hidden"></p>
         </div>
     </div>
 
-    <!-- Interfaz Principal de la Aplicación -->
-    <div class="header">
-        <h1>MVP <span>Studio Web</span></h1>
-        <div style="font-size: 0.9rem; color: #a2a5b5;">Estado: <span style="color: #03dac6;">Conectado a la Nube</span></div>
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="main-screen" class="app-container hidden">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Logo Vectorizado MVPP para Sidebar -->
+                <svg viewBox="0 0 120 40" style="width: 60px; height: auto; flex-shrink: 0;">
+                    <text x="0" y="32" font-family="'Arial Black', Impact, sans-serif" font-size="38" font-weight="900" fill="url(#purple-grad)" letter-spacing="-2">MVPP</text>
+                </svg>
+                <div class="logo-text" style="margin-left: 5px;">Studio <span class="gradient-text">AI</span><br><span>Tu estudio de audio con IA</span></div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-item active" data-target="view-inicio"><span class="icon">🏠</span> Inicio</li>
+                    <li class="nav-item" data-target="view-historial"><span class="icon">⏱</span> Historial</li>
+                    <li class="nav-item" data-target="view-proyectos"><span class="icon">📁</span> Mis Proyectos</li>
+                    <li class="spacer"></li>
+                    <li class="modal-trigger" data-modal="modal-ajustes"><span class="icon">⚙</span> Ajustes</li>
+                    <li class="modal-trigger" data-modal="modal-ayuda"><span class="icon">❓</span> Ayuda</li>
+                    <li class="modal-trigger" data-modal="modal-acerca"><span class="icon">ℹ</span> Acerca de</li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="app-version">
+                    <div class="version-icon">🎵</div>
+                    <div>
+                        <strong>MVPP Studio <span class="gradient-text">AI</span></strong>
+                        <span>v2.0 Pro</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="connection-status"><span class="dot"></span> CONECTADO</div>
+                <div class="topbar-actions">
+                    <button class="icon-btn modal-trigger" data-modal="modal-ayuda">❓</button>
+                    <button class="icon-btn modal-trigger" data-modal="modal-ajustes">⚙</button>
+                    <button id="theme-toggle" class="icon-btn">🌙</button>
+                </div>
+            </header>
+
+            <!-- VISTA: INICIO -->
+            <div id="view-inicio" class="workspace view-section active">
+                <div class="welcome-section">
+                    <h1>¡Bienvenido a MVPP Studio <span class="gradient-text">AI</span>!</h1>
+                    <p>Tu herramienta todo en uno para audio. Descarga, separa, crea y disfruta.</p>
+                </div>
+
+                <div class="action-grid">
+                    <div class="action-card">
+                        <div class="card-header"><span class="icon-circle">🔗</span> 1. Descargar audio con URL</div>
+                        <input type="text" id="youtube-url" class="input-field" placeholder="Pega aquí la URL del audio...">
+                        <button id="download-btn" class="btn-primary w-full"><span class="icon">📥</span> Descargar audio</button>
+                        <p id="download-status" class="status-text hidden"></p>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="card-header"><span class="icon-circle">☁</span> 2. Subir audio</div>
+                        <div class="upload-zone" id="drop-zone">
+                            <input type="file" id="file-input" accept=".mp3,.wav,.flac,.m4a" class="hidden">
+                            <div id="drop-content">
+                                <span class="cloud-icon">☁</span>
+                                <p>Arrastra tu archivo aquí<br>o haz clic para seleccionar</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-card task-card">
+                        <div class="card-header"><span class="icon-circle stars">✨</span> 3. Elegir tarea</div>
+                        <div class="task-buttons">
+                            <button id="btn-karaoke" class="btn-task gradient-btn" disabled>🎤 Generar Karaoke (2)</button>
+                            <button id="btn-stems" class="btn-task outline-btn" disabled>📊 Generar Stems (7)</button>
+                        </div>
+                        <p id="process-status" class="status-text hidden" style="margin-top:10px;"></p>
+                    </div>
+                </div>
+
+                <section class="results-section">
+                    <div class="results-header">
+                        <div class="results-title">
+                            <svg viewBox="0 0 24 24" width="24" height="24" stroke="url(#purple-grad)" stroke-width="2" fill="none"><path d="M3 12h3l3-9 6 18 3-9h3"/></svg>
+                            <h2>Resultados (Waveform Pro)</h2>
+                        </div>
+                    </div>
+                    <p class="subtitle">Tus archivos se guardan automáticamente en: <strong>Música / MVP Studio AI / Resultados</strong></p>
+
+                    <div class="tabs">
+                        <button class="tab active" data-filter="all">Todos</button>
+                        <button class="tab" data-filter="karaoke">Karaokes</button>
+                        <button class="tab" data-filter="stems">Stems</button>
+                    </div>
+
+                    <div id="results-container">
+                        <div class="empty-state" id="empty-state">Esperando procesamiento...</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- VISTA: HISTORIAL -->
+            <div id="view-historial" class="workspace view-section hidden">
+                <div class="welcome-section">
+                    <h1>Historial de <span class="gradient-text">Procesamientos</span></h1>
+                    <p>Aquí encontrarás todas las pistas que has generado anteriormente en este equipo.</p>
+                </div>
+                <div id="history-container">
+                    <div class="empty-state">No hay historial disponible.</div>
+                </div>
+            </div>
+
+            <!-- VISTA: PROYECTOS -->
+            <div id="view-proyectos" class="workspace view-section hidden">
+                <div class="welcome-section">
+                    <h1>Tus <span class="gradient-text">Proyectos</span></h1>
+                    <p>Espacio reservado para gestionar mezclas multipista completas.</p>
+                </div>
+                <div class="empty-state">No has guardado ningún proyecto aún.</div>
+            </div>
+        </main>
     </div>
 
-    <div class="app-container">
-        <!-- Sidebar Controles -->
-        <div class="sidebar">
-            <h2>1. Origen del Audio</h2>
-            
-            <div class="control-group">
-                <label>Enlace de YouTube:</label>
-                <input type="text" id="yt-url" placeholder="https://youtube.com/watch?v=...">
-                <button onclick="descargarYT()">Extraer Audio</button>
-            </div>
-
-            <div style="text-align: center; color: #a2a5b5; margin-bottom: 20px; font-size: 0.8rem;">Opciones Locales</div>
-
-            <div class="control-group">
-                <label>Subir desde Dispositivo:</label>
-                <input type="file" id="local-file" accept="audio/*">
-                <button class="btn-alt" onclick="subirArchivoLocal()">Subir Archivo</button>
-            </div>
-
-            <h2>2. Procesamiento IA</h2>
-            <div class="control-group">
-                <label>Modelo de Separación:</label>
-                <select id="mode">
-                    <option value="2stems">2 Stems (Voz + Pista instrumental)</option>
-                    <option value="4stems">4 Stems (Voz + Batería + Bajo + Otros)</option>
-                </select>
-                <button id="btn-procesar" onclick="procesarIA()" disabled>Separar Audio</button>
-            </div>
-        </div>
-
-        <!-- Panel de Resultados y Logs -->
-        <div class="main-content">
-            <div id="status-panel" class="status-box">
-                > Sistema iniciado y a la espera de archivos...
-            </div>
-            
-            <div id="results" class="stems-grid">
-                <!-- Los reproductores de audio aparecerán aquí -->
-            </div>
+    <!-- MODALES FLOTANTES -->
+    <div id="modal-ajustes" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>⚙ Ajustes del Sistema</h2>
+            <p><strong>Ruta de guardado:</strong> Nube / Servidor Remoto</p>
+            <p><strong>Calidad de extracción:</strong> WAV (Sin pérdida)</p>
+            <p><strong>Motor IA:</strong> MVP</p>
+            <button class="btn-primary" style="margin-top: 20px; width: 100%;">Guardar Preferencias</button>
         </div>
     </div>
 
-    <script>
-        let currentFilePath = "";
+    <div id="modal-ayuda" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>❓ Centro de Ayuda</h2>
+            <p>1. <strong>URL de YouTube:</strong> Pega el enlace y presiona descargar. La IA limpiará el formato automáticamente.</p>
+            <p>2. <strong>Carga Local:</strong> Puedes arrastrar MP3, WAV, FLAC o M4A directamente.</p>
+            <p>3. <strong>Stems vs Karaoke:</strong> Karaoke extrae 2 pistas (Voz e Instrumental). Stems extrae 7 pistas (Batería, Bajo, Piano, etc).</p>
+        </div>
+    </div>
 
-        // Control de sesión por dispositivo
-        window.onload = function() {
-            if (localStorage.getItem("MVP_WEB_ACTIVE") === "true") {
-                document.getElementById("login-overlay").classList.add("hidden");
-            }
-        };
+    <div id="modal-acerca" class="modal hidden">
+        <div class="modal-content" style="text-align: center;">
+            <span class="close-modal">&times;</span>
+            <!-- Logo Vectorizado MVPP para Modal -->
+            <svg viewBox="0 0 120 40" style="width: 100px; height: auto; margin: 0 auto 15px auto; display: block;">
+                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="'Arial Black', Impact, sans-serif" font-size="38" font-weight="900" fill="url(#purple-grad)" letter-spacing="-2">MVPP</text>
+            </svg>
+            <h2>MVPP Studio <span class="gradient-text">AI</span></h2>
+            <p>Versión 2.0 Pro Web</p>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 15px;">Software impulsado por IA para el aislamiento y producción de audio de grado de estudio en la nube.</p>
+        </div>
+    </div>
 
-        function setStatus(msg, isError = false) {
-            const panel = document.getElementById("status-panel");
-            panel.style.color = isError ? "#cf6679" : "#03dac6";
-            panel.style.borderLeftColor = isError ? "#cf6679" : "#8a2be2";
-            panel.innerText = `> ${msg}`;
-        }
+    <!-- Definición del Degradado Vectorial (Se aplica a los textos MVPP y elementos de la interfaz) -->
+    <svg width="0" height="0">
+        <linearGradient id="purple-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop stop-color="#8B5CF6" offset="0%" />
+            <stop stop-color="#6366F1" offset="100%" />
+        </linearGradient>
+    </svg>
 
-        async function validarLicencia() {
-            const cod = document.getElementById("licencia").value.trim();
-            const statusText = document.getElementById("login-status");
-            if (!cod) return statusText.innerText = "Por favor, escribe un código.";
-            
-            statusText.innerText = "Validando en servidor...";
-            statusText.style.color = "#03dac6";
-
-            try {
-                const res = await fetch("/api/activar", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({codigo: cod})
-                });
-                
-                if (res.ok) {
-                    localStorage.setItem("MVP_WEB_ACTIVE", "true");
-                    document.getElementById("login-overlay").classList.add("hidden");
-                } else {
-                    statusText.style.color = "#cf6679";
-                    statusText.innerText = "Código incorrecto, bloqueado o inexistente.";
-                }
-            } catch(e) {
-                statusText.style.color = "#cf6679";
-                statusText.innerText = "Error de conexión con el servidor de licencias.";
-            }
-        }
-
-        async function descargarYT() {
-            const url = document.getElementById("yt-url").value.trim();
-            if (!url) return setStatus("Advertencia: No hay enlace de YouTube.", true);
-
-            setStatus("Iniciando bypass de servidor para descargar audio...");
-            try {
-                const res = await fetch("/api/descargar", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({url: url})
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    currentFilePath = data.file_path;
-                    setStatus("Éxito: Archivo descargado -> " + data.title);
-                    document.getElementById("btn-procesar").disabled = false;
-                } else {
-                    setStatus(data.detail, true);
-                }
-            } catch(e) {
-                setStatus("Error crítico al contactar al servidor para la descarga.", true);
-            }
-        }
-
-        async function subirArchivoLocal() {
-            const fileInput = document.getElementById("local-file");
-            if (!fileInput.files[0]) return setStatus("Advertencia: Selecciona un archivo primero.", true);
-
-            const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
-
-            setStatus(`Subiendo archivo ${fileInput.files[0].name} al servidor...`);
-            try {
-                const res = await fetch("/api/upload", { method: "POST", body: formData });
-                const data = await res.json();
-
-                if (res.ok) {
-                    currentFilePath = data.file_path;
-                    setStatus("Éxito: Archivo cargado en el servidor correctamente.");
-                    document.getElementById("btn-procesar").disabled = false;
-                } else {
-                    setStatus("Error al subir archivo.", true);
-                }
-            } catch(e) {
-                setStatus("Error de conexión durante la subida.", true);
-            }
-        }
-
-        async function procesarIA() {
-            const mode = document.getElementById("mode").value;
-            setStatus("Iniciando motor de Inteligencia Artificial (MVSEP)...");
-            document.getElementById("btn-procesar").disabled = true;
-
-            try {
-                const res = await fetch("/api/procesar", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({file_path: currentFilePath, mode: mode})
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    monitorearTarea(data.task_id);
-                } else {
-                    setStatus("Error al iniciar la IA en el servidor.", true);
-                    document.getElementById("btn-procesar").disabled = false;
-                }
-            } catch(e) {
-                setStatus("Error de conexión al procesar.", true);
-                document.getElementById("btn-procesar").disabled = false;
-            }
-        }
-
-        function monitorearTarea(taskId) {
-            const interval = setInterval(async () => {
-                const res = await fetch(`/api/task/${taskId}`);
-                const data = await res.json();
-
-                if (data.status === "completed") {
-                    clearInterval(interval);
-                    setStatus("¡Proceso de Separación Terminado Exitosamente!");
-                    document.getElementById("btn-procesar").disabled = false;
-                    mostrarResultados(data.files);
-                } else if (data.status === "failed") {
-                    clearInterval(interval);
-                    setStatus("Error en la separación de audio.", true);
-                    document.getElementById("btn-procesar").disabled = false;
-                } else {
-                    setStatus(data.message || "Procesando audio en la nube...");
-                }
-            }, 3000);
-        }
-
-        function mostrarResultados(files) {
-            const div = document.getElementById("results");
-            div.innerHTML = ""; // Limpiamos resultados anteriores
-            
-            for (const [key, val] of Object.entries(files)) {
-                div.innerHTML += `
-                    <div class="stem-card">
-                        <h3>Pista: ${key}</h3>
-                        <audio controls src="/${val}"></audio>
-                    </div>`;
-            }
-        }
-    </script>
+    <script src="/static/js/app.js"></script>
 </body>
 </html>
