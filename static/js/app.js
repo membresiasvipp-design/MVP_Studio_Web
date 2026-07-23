@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // 2. DESCARGA DE YOUTUBE (YT Search And Download MP3)
+    // 2. DESCARGA DE YOUTUBE (YT Search And Download MP3 - CORREGIDO)
     // ==========================================
     const downloadBtn = document.getElementById("download-btn");
     
@@ -73,12 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
             statusText.innerHTML = "⏳ Consultando la nueva API de MP3...";
 
             try {
-                // Extraemos el ID exacto del video
-                const match = urlInput.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-                if (!match) throw new Error("La URL no es de YouTube o no es válida.");
-                const videoId = match[1];
-
-                const apiUrl = `https://yt-search-and-download-mp3.p.rapidapi.com/mp3?id=${videoId}`;
+                // CORRECCIÓN: Le enviamos la URL completa encriptada en formato web en lugar del ID
+                const apiUrl = `https://yt-search-and-download-mp3.p.rapidapi.com/mp3?url=${encodeURIComponent(urlInput)}`;
 
                 const resApi = await fetch(apiUrl, {
                     method: "GET",
@@ -94,13 +90,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     throw new Error(`RapidAPI: ${dataApi.message || "Error desconocido. Revisa si le diste a 'Subscribe to Test' en RapidAPI."}`);
                 }
 
-                // Intentamos capturar el enlace de descarga
+                // Si la API dice explícitamente "success: false", lanzamos el error
+                if (dataApi.success === false) {
+                    throw new Error(dataApi.error || "La API rechazó el enlace.");
+                }
+
+                // Intentamos capturar el enlace de descarga en sus diferentes nombres posibles
                 let finalLink = null;
                 if (dataApi.link) finalLink = dataApi.link;
                 else if (dataApi.download) finalLink = dataApi.download;
                 else if (dataApi.url) finalLink = dataApi.url;
+                else if (dataApi.mp3) finalLink = dataApi.mp3;
                 else {
-                    // Modo Diagnóstico
+                    // Modo Diagnóstico (por si ahora el error es otro o nos da el enlace con otro nombre)
                     statusText.innerHTML = `
                         <div style="margin-top: 15px; padding: 15px; background: rgba(207, 102, 121, 0.1); border-radius: 8px; border: 1px solid #cf6679; overflow-x: auto;">
                             <p style="color: #cf6679; margin-bottom: 10px;">⚠️ La API respondió con éxito, pero con un formato distinto. Cópiale esto a la IA:</p>
