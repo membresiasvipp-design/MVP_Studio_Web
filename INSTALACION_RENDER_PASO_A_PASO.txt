@@ -1,0 +1,57 @@
+MVP STUDIO IA WEB - RENDER V1
+================================
+
+1. CREA UN REPOSITORIO EN GITHUB
+   Nombre sugerido: mvpstudioia-web
+
+2. SUBE A GITHUB TODOS LOS ARCHIVOS DE ESTA CARPETA.
+   No subas .env ni tus APIs.
+
+3. EN RENDER:
+   - Dashboard -> New -> Web Service
+   - Connect GitHub
+   - Selecciona mvpstudioia-web
+   - Render detectará el Dockerfile.
+   - Plan: Free
+   - Health Check: /api/health
+   - Create Web Service
+
+4. VARIABLES DE ENTORNO EN RENDER:
+   Opción A:
+     MVSEP_API_TOKEN = tu API
+
+   Opción B (recomendada si ya usas rotación):
+     APPS_SCRIPT_URL = URL de tu Google Apps Script actual
+
+   Adicionales:
+     APP_NAME = MVP Studio IA
+     MAX_UPLOAD_MB = 40
+     MAX_YOUTUBE_DURATION_SECONDS = 1800
+     MAX_ACTIVE_JOBS = 2
+
+5. PRUEBA LA URL *.onrender.com:
+   /api/health
+   Luego abre /
+
+6. DOMINIO:
+   Render -> Settings -> Custom Domains -> Add Custom Domain
+   Agrega:
+      studiomvpia.online
+      www.studiomvpia.online (opcional)
+
+7. CLOUDFLARE:
+   - SSL/TLS -> Overview -> Full
+   - DNS -> elimina AAAA del dominio si existe.
+   - CNAME @ -> TU-SERVICIO.onrender.com
+   - CNAME www -> TU-SERVICIO.onrender.com
+   - Primero usa DNS only (nube gris)
+   - Espera que Render verifique y emita certificado.
+   - Después puedes activar Proxied si deseas.
+
+8. PRUEBA:
+   - Subir audio pequeño.
+   - YouTube.
+   - Drive/Dropbox/MEGA.
+   - Revisa que los botones finales apunten a *.mvsep.com y no a Render.
+
+NO COLOQUES LAS API KEYS DENTRO DEL CÓDIGO.

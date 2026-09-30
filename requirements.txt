@@ -1,6 +1,6 @@
-fastapi
-uvicorn
-python-multipart
-pydantic
-yt-dlp
-requests
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-multipart==0.0.20
+requests==2.32.5
+requests-toolbelt==1.0.0
+yt-dlp[default,curl-cffi]

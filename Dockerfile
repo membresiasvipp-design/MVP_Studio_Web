@@ -1,23 +1,19 @@
-# Usamos una versión ligera de Python y Linux
-FROM python:3.10-slim
+FROM python:3.13-slim
 
-# Le decimos a Linux que instale FFmpeg
-RUN apt-get update && \
-    apt-get install -y ffmpeg && \
-    rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Creamos nuestra carpeta de trabajo
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg nodejs ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-
-# Copiamos e instalamos las librerías
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --upgrade pip && pip install -r requirements.txt
 
-# Copiamos todo nuestro proyecto
 COPY . .
 
-# Creamos carpetas internas seguras para las descargas
-RUN mkdir -p descargas data output
-
-# Comando para encender el servidor web en el puerto 10000
-CMD ["uvicorn", "MVP_Studio:app", "--host", "0.0.0.0", "--port", "10000"]
+ENV PORT=10000
+EXPOSE 10000
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1 --timeout-keep-alive 120"]
