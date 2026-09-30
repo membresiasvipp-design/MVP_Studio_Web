@@ -1,0 +1,22 @@
+MVP STUDIO IA - PARCHE YOUTUBE DENO
+=====================================
+
+REEMPLAZAR EN GITHUB:
+- Dockerfile
+- requirements.txt
+- render.yaml
+- backend/main.py
+- backend/youtube_downloader.py
+
+DESPUÉS:
+1. Commit.
+2. Push origin.
+3. Render -> Manual Deploy -> Clear build cache & deploy.
+4. Esperar a que quede Live.
+5. Probar primero un video de YouTube de 3 a 8 minutos.
+
+IMPORTANTE:
+- Por ahora YouTube queda limitado a 10 minutos (600 segundos).
+- NO se implementa todavía división/unión de audio largo.
+- Si en Render -> Environment ya existe MAX_YOUTUBE_DURATION_SECONDS=1800,
+  cambiarlo manualmente a 600 o eliminarlo para usar el valor del proyecto.

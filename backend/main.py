@@ -22,7 +22,7 @@ from backend.youtube_downloader import download_youtube, probe_youtube
 APP_NAME = os.getenv("APP_NAME", "MVP Studio IA")
 MAX_UPLOAD_MB = float(os.getenv("MAX_UPLOAD_MB", "40"))
 MAX_UPLOAD_BYTES = int(MAX_UPLOAD_MB * 1024 * 1024)
-MAX_YOUTUBE_DURATION_SECONDS = int(os.getenv("MAX_YOUTUBE_DURATION_SECONDS", "1800"))
+MAX_YOUTUBE_DURATION_SECONDS = min(int(os.getenv("MAX_YOUTUBE_DURATION_SECONDS", "600")), 600)
 MAX_ACTIVE_JOBS = max(1, int(os.getenv("MAX_ACTIVE_JOBS", "2")))
 
 ALLOWED_MODEL_IDS = {63, 40, 49, 30, 28, 26, 126, 48, 35, 25, 46, 123, 23, 9, 17, 19, 27, 43, 33, 0, 111, 112, 12, 53, 57, 34, 42, 41, 31, 66, 81, 101, 124, 102, 96, 83, 74, 90, 97, 72, 44, 37, 38, 105, 94, 76, 84, 85, 109, 86, 89, 95, 98, 128, 133, 29, 79, 106, 88, 58, 91, 99, 129, 130, 131, 110, 52, 65, 69, 70, 73, 54, 107, 108, 61, 67, 71, 75, 77, 78, 82, 87, 92, 93, 116, 132, 20, 10, 13, 7, 15, 16, 24, 36, 45, 56, 18, 22, 47, 59, 60, 117, 125, 122, 51, 50, 55, 68, 14, 39, 64, 103, 104, 118, 119, 120, 115, 62, 121, 80, 113, 114, 127}
