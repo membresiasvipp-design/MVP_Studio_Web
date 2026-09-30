@@ -1,22 +1,39 @@
-MVP STUDIO IA - PARCHE YOUTUBE DENO
+MVP STUDIO IA - YOUTUBE PO TOKEN FIX
 =====================================
 
 REEMPLAZAR EN GITHUB:
-- Dockerfile
-- requirements.txt
-- render.yaml
-- backend/main.py
-- backend/youtube_downloader.py
+1. Dockerfile
+2. requirements.txt
+3. backend/youtube_downloader.py
+
+NO cambies:
+- login
+- Google Sheets
+- APIs MVSep
+- frontend
+- modelos
 
 DESPUÉS:
-1. Commit.
-2. Push origin.
-3. Render -> Manual Deploy -> Clear build cache & deploy.
-4. Esperar a que quede Live.
-5. Probar primero un video de YouTube de 3 a 8 minutos.
+GitHub Desktop:
+1. Commit to main
+2. Push origin
 
-IMPORTANTE:
-- Por ahora YouTube queda limitado a 10 minutos (600 segundos).
-- NO se implementa todavía división/unión de audio largo.
-- Si en Render -> Environment ya existe MAX_YOUTUBE_DURATION_SECONDS=1800,
-  cambiarlo manualmente a 600 o eliminarlo para usar el valor del proyecto.
+Render:
+1. Manual Deploy
+2. Clear build cache & deploy   <-- IMPORTANTE
+3. Esperar hasta Live
+
+El archivo Secret File youtube_cookies.txt puede quedarse.
+La nueva lógica intenta primero SIN cookies usando:
+- Deno
+- EJS
+- mweb
+- BgUtils PO Token Provider
+
+Solo si es necesario intenta las cookies.
+
+YouTube continúa limitado a 10 minutos.
+NO se ha agregado todavía la división/unión de audios largos.
+
+Si el build de Render falla, copiar el bloque del log donde aparezca
+"bgutil" o "deno" para poder corregirlo.

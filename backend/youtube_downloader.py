@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -8,21 +9,42 @@ import time
 from pathlib import Path
 from typing import Callable
 
-import yt_dlp
+BGUTIL_HOME = os.getenv(
+    "BGUTIL_HOME",
+    "/opt/bgutil-ytdlp-pot-provider",
+).strip()
+
+YOUTUBE_COOKIE_FILE = os.getenv(
+    "YOUTUBE_COOKIE_FILE",
+    "/etc/secrets/youtube_cookies.txt",
+).strip()
 
 
-def _is_final_error(text: str) -> bool:
-    t = (text or "").lower()
-    return any(x in t for x in (
-        "unsupported url",
-        "private video",
-        "video unavailable",
-        "this video is unavailable",
-        "video has been removed",
-        "members-only content",
-        "members only content",
-        "sign in to confirm your age",
-    ))
+def _cookie_file() -> str:
+    candidates = [
+        YOUTUBE_COOKIE_FILE,
+        "/etc/secrets/youtube_cookies.txt",
+        "/etc/secrets/cookies.txt",
+    ]
+    for raw in candidates:
+        if not raw:
+            continue
+        p = Path(raw)
+        if not p.is_file():
+            continue
+        try:
+            lines = p.read_text(
+                encoding="utf-8", errors="ignore"
+            ).splitlines()
+            first = lines[0].strip() if lines else ""
+        except Exception:
+            continue
+        if first in (
+            "# Netscape HTTP Cookie File",
+            "# HTTP Cookie File",
+        ):
+            return str(p)
+    return ""
 
 
 def _deno_runtime() -> str:
@@ -40,14 +62,20 @@ def _yt_dlp_cli() -> str:
     return shutil.which("yt-dlp") or ""
 
 
-def _common_cli_args() -> list[str]:
+def _provider_home() -> str:
+    p = Path(BGUTIL_HOME) / "server"
+    return str(p) if p.is_dir() else ""
+
+
+def _base_args(use_cookies: bool = False) -> list[str]:
     deno = _deno_runtime()
     if not deno:
         raise RuntimeError(
-            "Deno no está disponible en el servidor. "
-            "Realiza un Clear build cache & deploy en Render."
+            "Deno no está instalado en Render. "
+            "Haz Clear build cache & deploy."
         )
-    return [
+
+    args = [
         "--no-playlist",
         "--no-check-certificates",
         "--no-cache-dir",
@@ -56,41 +84,136 @@ def _common_cli_args() -> list[str]:
         "--extractor-retries", "3",
         "--socket-timeout", "25",
         "--js-runtimes", f"deno:{deno}",
+        "--remote-components", "ejs:npm",
     ]
 
+    if use_cookies:
+        cookie = _cookie_file()
+        if cookie:
+            args += ["--cookies", cookie]
 
-def _run_probe_cli(url: str, remote_component: str | None):
+    return args
+
+
+def _profile_args(
+    client: str,
+    use_pot: bool,
+    use_cookies: bool,
+) -> list[str]:
+    args = _base_args(use_cookies=use_cookies)
+    args += [
+        "--extractor-args",
+        f"youtube:player-client={client}",
+    ]
+
+    if use_pot:
+        provider = _provider_home()
+        if not provider:
+            raise RuntimeError(
+                "BgUtils PO Token Provider no está instalado. "
+                "Haz Clear build cache & deploy en Render."
+            )
+        args += [
+            "--extractor-args",
+            f"youtubepot-bgutilscript:server_home={provider}",
+        ]
+
+    return args
+
+
+# Orden intencional:
+# 1. mweb + PO token sin cuenta.
+# 2. mweb + PO token + cookies si YouTube aún exige sesión.
+# 3. web_safari como respaldo.
+# 4. web_embedded para videos que permiten embed.
+PROFILES = (
+    ("mweb-pot", "mweb", True, False),
+    ("mweb-pot-cookies", "mweb", True, True),
+    ("web-safari", "web_safari", False, False),
+    ("web-embedded", "web_embedded", False, False),
+)
+
+
+def _is_definitive_error(text: str) -> bool:
+    t = (text or "").lower()
+    return any(x in t for x in (
+        "private video",
+        "video unavailable",
+        "this video is unavailable",
+        "video has been removed",
+        "members-only content",
+        "members only content",
+        "sign in to confirm your age",
+        "unsupported url",
+    ))
+
+
+def _friendly_error(text: str) -> str:
+    t = (text or "").lower()
+
+    if "failed to extract any player response" in t:
+        return (
+            "YouTube no entregó una respuesta de reproducción al servidor. "
+            "Se intentó PO Token, Deno/EJS y perfiles alternativos. "
+            "Si persiste, la IP de Render puede estar bloqueada por YouTube."
+        )
+
+    if "sign in to confirm you" in t and "not a bot" in t:
+        if _cookie_file():
+            return (
+                "YouTube sigue rechazando la IP/sesión del servidor aunque "
+                "youtube_cookies.txt está instalado. Puede ser un bloqueo "
+                "de la IP de Render."
+            )
+        return (
+            "YouTube solicita autenticación al servidor. "
+            "Agrega youtube_cookies.txt como Secret File en Render."
+        )
+
+    if "po token" in t or "pot" in t:
+        return (
+            "No se pudo obtener el PO Token de YouTube. "
+            "Verifica que el despliegue haya instalado BgUtils correctamente."
+        )
+
+    return text[-1200:]
+
+
+def _run_probe_profile(
+    url: str,
+    client: str,
+    use_pot: bool,
+    use_cookies: bool,
+):
     exe = _yt_dlp_cli()
     if not exe:
-        raise RuntimeError("yt-dlp CLI no está disponible.")
+        raise RuntimeError("yt-dlp CLI no está instalado.")
 
     cmd = [
         exe,
-        *_common_cli_args(),
+        *_profile_args(client, use_pot, use_cookies),
         "--skip-download",
         "--dump-single-json",
         "--no-warnings",
+        url,
     ]
-    if remote_component:
-        cmd += ["--remote-components", remote_component]
-    cmd.append(url)
 
-    proc = subprocess.run(
+    p = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=90,
+        timeout=120,
     )
-    if proc.returncode != 0:
-        raise RuntimeError((proc.stderr or proc.stdout or "Error de yt-dlp")[-1800:])
 
-    raw = (proc.stdout or "").strip()
-    if not raw:
-        raise RuntimeError("YouTube no devolvió información del video.")
-    # yt-dlp puede imprimir líneas previas; usamos la última línea JSON válida.
+    if p.returncode != 0:
+        raise RuntimeError(
+            (p.stderr or p.stdout or "Error de YouTube")[-2400:]
+        )
+
+    raw = (p.stdout or "").strip()
     for line in reversed(raw.splitlines()):
         line = line.strip()
         if not line.startswith("{"):
@@ -99,236 +222,161 @@ def _run_probe_cli(url: str, remote_component: str | None):
             return json.loads(line)
         except Exception:
             continue
+
     try:
         return json.loads(raw)
-    except Exception as exc:
-        raise RuntimeError(f"No se pudo interpretar la información de YouTube: {exc}")
+    except Exception:
+        raise RuntimeError(
+            "yt-dlp no devolvió información JSON del video."
+        )
 
 
 def probe_youtube(url: str):
-    last_error = ""
-    # 1) EJS instalado con yt-dlp[default], 2) npm remoto como respaldo,
-    # 3) GitHub remoto como último respaldo.
-    for remote in (None, "ejs:npm", "ejs:github"):
+    errors = []
+
+    for name, client, use_pot, use_cookies in PROFILES:
+        # Si el perfil depende de cookies y no existen, lo saltamos.
+        if use_cookies and not _cookie_file():
+            continue
+
         try:
-            info = _run_probe_cli(url, remote)
+            info = _run_probe_profile(
+                url,
+                client=client,
+                use_pot=use_pot,
+                use_cookies=use_cookies,
+            )
+
             if info.get("_type") == "playlist":
-                entries = [x for x in (info.get("entries") or []) if x]
+                entries = [
+                    x for x in (info.get("entries") or []) if x
+                ]
                 if not entries:
-                    raise RuntimeError("No se encontró un video descargable.")
+                    raise RuntimeError(
+                        "No se encontró un video descargable."
+                    )
                 info = entries[0]
+
             return {
                 "title": info.get("title") or "YouTube",
                 "duration": info.get("duration") or 0,
+                "profile": name,
             }
         except Exception as exc:
-            last_error = str(exc)
-            if _is_final_error(last_error):
-                raise RuntimeError(last_error)
+            msg = str(exc)
+            errors.append(f"{name}: {msg}")
+            if _is_definitive_error(msg):
+                raise RuntimeError(_friendly_error(msg))
 
-    # Fallback API Python usando Deno
-    deno = _deno_runtime()
-    if deno:
-        try:
-            opts = {
-                "quiet": True,
-                "no_warnings": True,
-                "noplaylist": True,
-                "nocheckcertificate": True,
-                "socket_timeout": 25,
-                "skip_download": True,
-                "cachedir": False,
-                "js_runtimes": {"deno": {"path": deno}},
-                "remote_components": {"ejs:npm"},
-            }
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-            if info:
-                return {
-                    "title": info.get("title") or "YouTube",
-                    "duration": info.get("duration") or 0,
-                }
-        except Exception as exc:
-            last_error = str(exc)
-
+    last = errors[-1] if errors else "Sin respuesta."
     raise RuntimeError(
         "No se pudo leer el video de YouTube. "
-        f"Detalle: {last_error[-900:]}"
+        f"Detalle: {_friendly_error(last)}"
     )
 
 
 def _parse_pct(line: str):
     if "__MVP_PROGRESS__=" not in line:
         return None
-    value = line.split("__MVP_PROGRESS__=", 1)[1].replace("%", "").strip()
+    value = (
+        line.split("__MVP_PROGRESS__=", 1)[1]
+        .replace("%", "")
+        .strip()
+    )
     m = re.search(r"(\d+(?:\.\d+)?)", value)
     return float(m.group(1)) if m else None
 
 
-def _download_cli(
+def _download_profile(
     url: str,
     output_dir: Path,
     progress: Callable,
     cancelled: Callable[[], bool],
+    name: str,
+    client: str,
+    use_pot: bool,
+    use_cookies: bool,
 ):
     exe = _yt_dlp_cli()
     if not exe:
-        return None, "yt-dlp CLI no disponible", False
+        raise RuntimeError("yt-dlp CLI no está instalado.")
 
-    last_error = ""
-    for remote in (None, "ejs:npm", "ejs:github"):
-        if cancelled():
-            raise RuntimeError("Proceso cancelado.")
+    out = str(
+        output_dir / "%(title).160B [%(id)s].%(ext)s"
+    )
 
-        out = str(output_dir / "%(title).160B [%(id)s].%(ext)s")
-        cmd = [
-            exe,
-            *_common_cli_args(),
-            "--quiet",
-            "--no-warnings",
-            "--restrict-filenames",
-            "--newline",
-            "--progress",
-            "--no-colors",
-            "--progress-template",
-            "download:__MVP_PROGRESS__=%(progress._percent_str)s",
-            "-f", "bestaudio/best",
-            "-o", out,
-        ]
-        if remote:
-            cmd += ["--remote-components", remote]
-        cmd += [
-            "--print", "after_move:__MVP_PATH__=%(filepath)s",
-            "--print", "after_move:__MVP_TITLE__=%(title)s",
-            url,
-        ]
+    cmd = [
+        exe,
+        *_profile_args(client, use_pot, use_cookies),
+        "--quiet",
+        "--no-warnings",
+        "--restrict-filenames",
+        "--newline",
+        "--progress",
+        "--no-colors",
+        "--progress-template",
+        "download:__MVP_PROGRESS__=%(progress._percent_str)s",
+        "-f", "bestaudio/best",
+        "-o", out,
+        "--print",
+        "after_move:__MVP_PATH__=%(filepath)s",
+        "--print",
+        "after_move:__MVP_TITLE__=%(title)s",
+        url,
+    ]
 
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            bufsize=1,
-        )
-        lines = []
-        path = ""
-        title = ""
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,
+    )
 
-        try:
-            assert proc.stdout is not None
-            for raw in proc.stdout:
-                if cancelled():
-                    proc.terminate()
-                    raise RuntimeError("Proceso cancelado.")
-                line = raw.rstrip()
-                lines.append(line)
-
-                pct = _parse_pct(line)
-                if pct is not None:
-                    progress(
-                        min(99.0, pct),
-                        f"Descargando YouTube · {pct:.0f}%",
-                    )
-                elif line.startswith("__MVP_PATH__="):
-                    path = line.split("=", 1)[1].strip()
-                elif line.startswith("__MVP_TITLE__="):
-                    title = line.split("=", 1)[1].strip()
-
-            code = proc.wait(timeout=1200)
-        except Exception:
-            try:
-                proc.kill()
-            except Exception:
-                pass
-            raise
-
-        if code == 0 and path and Path(path).exists():
-            progress(100.0, "Audio de YouTube listo.")
-            return {
-                "file_path": path,
-                "title": title or Path(path).stem,
-            }, "", False
-
-        last_error = "\n".join(lines)[-1800:]
-        if _is_final_error(last_error):
-            return None, last_error, True
-        time.sleep(0.5)
-
-    return None, last_error, False
-
-
-def _download_python(
-    url: str,
-    output_dir: Path,
-    progress: Callable,
-    cancelled: Callable[[], bool],
-):
-    deno = _deno_runtime()
-    if not deno:
-        raise RuntimeError("Deno no está disponible en Render.")
-
-    def hook(d):
-        if cancelled():
-            raise RuntimeError("Proceso cancelado.")
-        if d.get("status") == "downloading":
-            done = d.get("downloaded_bytes") or 0
-            total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
-            if total:
-                pct = min(99.0, done / total * 100.0)
-                speed = d.get("speed") or 0
-                speed_text = f"{speed/1024/1024:.2f} MB/s" if speed else ""
-                progress(
-                    pct,
-                    f"Descargando YouTube · {pct:.0f}%",
-                    speed_text,
-                )
-
-    opts = {
-        "outtmpl": str(output_dir / "%(title).160B [%(id)s].%(ext)s"),
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "restrictfilenames": True,
-        "nocheckcertificate": True,
-        "cachedir": False,
-        "retries": 3,
-        "fragment_retries": 3,
-        "extractor_retries": 3,
-        "socket_timeout": 25,
-        "format": "bestaudio/best",
-        "progress_hooks": [hook],
-        "js_runtimes": {"deno": {"path": deno}},
-        "remote_components": {"ejs:npm"},
-    }
+    path = ""
+    title = ""
+    lines = []
 
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            if info.get("_type") == "playlist":
-                info = next((x for x in (info.get("entries") or []) if x), None)
-            if not info:
-                raise RuntimeError("No se obtuvo información del video.")
+        assert proc.stdout is not None
+        for raw in proc.stdout:
+            if cancelled():
+                proc.terminate()
+                raise RuntimeError("Proceso cancelado.")
 
-            prepared = Path(ydl.prepare_filename(info))
-            candidates = [
-                p for p in prepared.parent.glob(prepared.stem + ".*")
-                if p.suffix.lower() not in {".part", ".ytdl", ".json"}
-            ]
-            if not candidates:
-                raise RuntimeError(
-                    "La descarga terminó pero no se encontró el archivo."
+            line = raw.rstrip()
+            lines.append(line)
+
+            pct = _parse_pct(line)
+            if pct is not None:
+                progress(
+                    min(99.0, pct),
+                    f"Descargando YouTube · {pct:.0f}%",
                 )
+            elif line.startswith("__MVP_PATH__="):
+                path = line.split("=", 1)[1].strip()
+            elif line.startswith("__MVP_TITLE__="):
+                title = line.split("=", 1)[1].strip()
 
-            final = max(candidates, key=lambda p: p.stat().st_mtime)
-            progress(100.0, "Audio de YouTube listo.")
-            return {
-                "file_path": str(final),
-                "title": info.get("title") or final.stem,
-            }
-    except Exception as exc:
-        raise RuntimeError(str(exc))
+        code = proc.wait(timeout=1200)
+    except Exception:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        raise
+
+    if code == 0 and path and Path(path).exists():
+        progress(100.0, "Audio de YouTube listo.")
+        return {
+            "file_path": path,
+            "title": title or Path(path).stem,
+            "profile": name,
+        }
+
+    raise RuntimeError("\n".join(lines)[-2400:])
 
 
 def download_youtube(
@@ -338,15 +386,34 @@ def download_youtube(
     cancelled: Callable[[], bool],
 ):
     output_dir.mkdir(parents=True, exist_ok=True)
+    errors = []
 
-    result, error, definitive = _download_cli(
-        url, output_dir, progress, cancelled
-    )
-    if result:
-        return result
-    if definitive:
-        raise RuntimeError(error)
+    for name, client, use_pot, use_cookies in PROFILES:
+        if use_cookies and not _cookie_file():
+            continue
+        if cancelled():
+            raise RuntimeError("Proceso cancelado.")
 
-    return _download_python(
-        url, output_dir, progress, cancelled
+        try:
+            return _download_profile(
+                url=url,
+                output_dir=output_dir,
+                progress=progress,
+                cancelled=cancelled,
+                name=name,
+                client=client,
+                use_pot=use_pot,
+                use_cookies=use_cookies,
+            )
+        except Exception as exc:
+            msg = str(exc)
+            errors.append(f"{name}: {msg}")
+            if _is_definitive_error(msg):
+                raise RuntimeError(_friendly_error(msg))
+            time.sleep(0.6)
+
+    last = errors[-1] if errors else "Sin respuesta."
+    raise RuntimeError(
+        "No se pudo descargar el audio de YouTube. "
+        f"Detalle: {_friendly_error(last)}"
     )
