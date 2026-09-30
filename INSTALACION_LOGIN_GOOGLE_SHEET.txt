@@ -1,0 +1,126 @@
+MVP STUDIO IA WEB - RENDER V2 LOGIN
+=====================================
+
+PARTE A - GOOGLE SHEET / APPS SCRIPT
+
+1. Crea un Google Sheet NUEVO:
+   MVP_STUDIO_IA_CONTROL
+
+2. Dentro:
+   Extensiones -> Apps Script.
+
+3. Borra el código de Code.gs.
+   Copia TODO el contenido de:
+   GOOGLE_APPS_SCRIPT_CODE.gs
+
+4. Guarda.
+
+5. Ejecuta la función:
+   configurarSistema
+
+6. La primera vez Google pedirá permisos.
+   Autorízalos.
+
+7. Mira el REGISTRO DE EJECUCIÓN.
+   Copia:
+   CONTROL_BACKEND_SECRET=xxxxxxxx
+
+   Guarda solamente el valor después del =.
+
+8. Vuelve al Google Sheet y actualiza la página.
+   Aparecerá el menú:
+   MVP Studio IA
+
+9. Desde ese menú:
+   MVP Studio IA -> Crear usuario
+
+   Escribe:
+   Usuario
+   Contraseña
+   Plan
+   Fecha de vencimiento
+
+   La contraseña NO aparecerá en texto plano en la hoja.
+
+10. Hoja API_KEYS:
+    Agrega tus APIs:
+
+    ID       API_KEY          ACTIVA    USOS   ULTIMO_USO   OBSERVACION
+    API-01   xxxxxxxxx        SI        0
+    API-02   xxxxxxxxx        SI        0
+
+11. Apps Script:
+    Implementar -> Nueva implementación
+    Tipo: Aplicación web
+
+    Ejecutar como:
+    Yo
+
+    Quién tiene acceso:
+    Cualquier usuario
+
+    Implementar.
+
+12. Copia la URL que termina en:
+    /exec
+
+
+PARTE B - RENDER
+
+13. En Render -> tu servicio -> Environment.
+
+14. ELIMINA las variables antiguas si existen:
+    APPS_SCRIPT_URL
+    (y cualquier variable de licencia web antigua)
+
+15. Agrega:
+
+    CONTROL_SCRIPT_URL
+    = URL /exec del Apps Script
+
+    CONTROL_BACKEND_SECRET
+    = secreto generado en el paso 7
+
+    SESSION_DAYS
+    = 90
+
+16. No necesitas guardar usuario ni contraseña en Render.
+
+17. Despliega esta V2 en GitHub/Render.
+
+
+PARTE C - PRUEBA
+
+18. Abre:
+    https://TU-SERVICIO.onrender.com/api/health
+
+19. Debe aparecer auth:
+    user-password-persistent-session
+
+20. Abre:
+    https://TU-SERVICIO.onrender.com
+
+21. Debe mostrar:
+    Usuario
+    Contraseña
+    Iniciar sesión
+
+22. Inicia sesión una vez.
+
+23. Cierra Chrome y vuelve a abrir la página.
+    Debe entrar DIRECTAMENTE sin pedir contraseña.
+
+24. Reinicia la PC y vuelve a entrar.
+    Mientras la cookie exista y el usuario siga ACTIVO,
+    debe entrar directamente.
+
+25. Para bloquearlo:
+    Google Sheet -> USUARIOS -> ESTADO:
+    ACTIVO -> BLOQUEADO
+
+    No podrá iniciar nuevos trabajos.
+
+IMPORTANTE:
+- La web NO guarda la contraseña en el navegador.
+- Guarda una cookie segura de sesión por 90 días.
+- Esto evita pedir usuario/contraseña a cada rato.

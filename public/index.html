@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#090b14" />
+  <meta name="description" content="MVP Studio IA - Extrae instrumental y voz desde tu audio." />
+  <title>MVP Studio IA | Separación de Pistas con IA</title>
+  <link rel="stylesheet" href="/styles.css?v=auth2" />
+</head>
+<body>
+  <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div>
+  
+  <section id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">MVP</div>
+      <span class="eyebrow">MVP STUDIO IA</span>
+      <h1>Iniciar sesión</h1>
+      <p>Ingresa con tu usuario y contraseña. Después de iniciar sesión, este dispositivo permanecerá conectado automáticamente.</p>
+
+      <form id="login-form" autocomplete="on">
+        <label class="field-label" for="login-user">Usuario</label>
+        <input id="login-user" name="username" type="text" autocomplete="username" spellcheck="false" required />
+
+        <label class="field-label" for="login-password">Contraseña</label>
+        <div class="password-wrap">
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+          <button id="toggle-password" type="button" class="password-toggle">Ver</button>
+        </div>
+
+        <div class="auth-remember">
+          <span>✓ La sesión se mantendrá iniciada automáticamente en este navegador.</span>
+        </div>
+
+        <button id="login-btn" class="primary-btn" type="submit">
+          <span>Iniciar sesión</span><span class="btn-arrow">→</span>
+        </button>
+        <p id="login-error" class="login-error hidden"></p>
+      </form>
+    </div>
+  </section>
+
+<main class="shell hidden" id="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="MVP Studio IA">
+        <span class="brand-mark">MVP</span>
+        <span><strong>STUDIO IA</strong><small>Separación profesional de pistas</small></span>
+      </a>
+      <div class="top-actions">
+        <div class="server-pill"><span class="dot"></span><span id="server-label">Servidor IA</span></div>
+        <div id="user-box" class="user-box hidden">
+          <span id="user-name"></span>
+          <span id="user-plan" class="user-plan"></span>
+          <button id="logout-btn" class="logout-btn" type="button">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <span class="eyebrow">SEPARACIÓN DE AUDIO CON IA</span>
+      <h1>Tu canción. <em>Las pistas que necesites.</em></h1>
+      <p>Conserva los modelos de MVP Studio IA: sube tu audio, usa YouTube o pega un enlace de Drive, Dropbox o MEGA. Los archivos temporales se eliminan después de enviarlos al motor de separación.</p>
+    </section>
+
+    <section class="studio-card" id="studio-card">
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab active" id="tab-file" data-mode="file" type="button">Subir desde mi PC</button>
+        <button class="mode-tab" id="tab-youtube" data-mode="youtube" type="button">YouTube</button>
+        <button class="mode-tab" id="tab-link" data-mode="link" type="button">Drive / Dropbox / MEGA</button>
+      </div>
+
+      <div id="panel-file" class="mode-panel active">
+        <input id="file-input" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg" hidden />
+        <button id="drop-zone" class="drop-zone" type="button">
+          <span class="upload-icon">↑</span>
+          <strong id="drop-title">Arrastra tu audio aquí</strong>
+          <span id="drop-subtitle">o haz clic para seleccionar desde tu PC</span>
+          <small>MP3 · WAV · FLAC · M4A · AAC · máximo recomendado 40 MB</small>
+        </button>
+        <div id="file-card" class="selected-file hidden">
+          <div class="file-icon">♪</div>
+          <div class="file-meta"><strong id="file-name"></strong><span id="file-size"></span></div>
+          <button id="remove-file" class="icon-btn" type="button" aria-label="Quitar archivo">×</button>
+        </div>
+      </div>
+
+      
+      <div id="panel-youtube" class="mode-panel">
+        <label class="field-label" for="youtube-url">Enlace de YouTube</label>
+        <div class="url-wrap">
+          <input id="youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+          <span class="provider-badge ok">YouTube</span>
+        </div>
+        <div class="notice">MVP Studio IA descargará temporalmente el mejor audio disponible, lo enviará al motor de separación y lo eliminará de Render al crear el trabajo. No almacenamos el audio de forma permanente.</div>
+      </div>
+
+<div id="panel-link" class="mode-panel">
+        <label class="field-label" for="remote-url">Enlace compartido</label>
+        <div class="url-wrap">
+          <input id="remote-url" type="url" placeholder="Pega aquí tu enlace de Drive, Dropbox o MEGA" autocomplete="off" />
+          <span id="provider-badge" class="provider-badge">Enlace</span>
+        </div>
+        <div class="notice">Este modo acepta únicamente enlaces de <strong>Google Drive, Dropbox o MEGA</strong>. No admite YouTube, Spotify ni páginas web.</div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="quick-models-wrap">
+        <span class="field-label">Modelos recomendados</span>
+        <div class="quick-models">
+          <button class="quick-model active" data-model="63" type="button"><span>🎼</span><strong>BS Roformer SW</strong><small>6 pistas</small></button>
+          <button class="quick-model" data-model="40" type="button"><span>🎙️</span><strong>BS Roformer</strong><small>Voz / Instrumental</small></button>
+          <button class="quick-model" data-model="49" type="button"><span>🎤</span><strong>MVSep Karaoke</strong><small>Voz / Coros</small></button>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <div class="setting model-setting">
+          <label class="field-label" for="model-select">Modelo de separación</label>
+          <select id="model-select">
+                            <optgroup label="⭐ Modelos Principales (Recomendados)">
+                                <option value="63" selected>BS Roformer SW (Voces, Bajo, Bat, Guit, Piano, Otros)</option>
+                                <option value="40">BS Roformer (Voces / Instrumental)</option>
+                                <option value="49">MVSep Karaoke (Voces Principales / Coros)</option>
+                            </optgroup>
+                            <optgroup label="🌟 Ensembles y Multipista">
+                                <option value="30">Ensemble All-In (7 stems)</option>
+                                <option value="28">Ensemble (Vocals, Instrum, Bass, Drums, Other)</option>
+                                <option value="26">Ensemble (Vocals, Instrumental)</option>
+                                <option value="126">Mega 53-stem Model (Avanzado)</option>
+                            </optgroup>
+                            <optgroup label="🎤 Extracción Vocal (Solo Voces)">
+                                <option value="48">MelBand Roformer</option>
+                                <option value="35">MVSep MelBand Roformer</option>
+                                <option value="25">MDX23C</option>
+                                <option value="46">SCNet</option>
+                                <option value="123">BS PolarFormer</option>
+                                <option value="23">MDX B</option>
+                                <option value="9">Ultimate Vocal Remover VR</option>
+                                <option value="17">UVRv5 Demucs</option>
+                                <option value="19">MVSep Old Vocal Model</option>
+                                <option value="27">Demucs4 Vocals 2023</option>
+                                <option value="43">MVSep Multichannel BS</option>
+                                <option value="33">Vit Large 23</option>
+                                <option value="0">Spleeter</option>
+                            </optgroup>
+                            <optgroup label="🗣️ Coros, Karaoke y Multi-Cantante">
+                                <option value="111">MVSep SATB Choir (Soprano, Alto, Tenor, Bass)</option>
+                                <option value="112">MVSep Choir (Choir, Other)</option>
+                                <option value="12">MDX-B Karaoke</option>
+                                <option value="53">Medley Vox (Multi-Cantante)</option>
+                                <option value="57">MVSep Male/Female Separation</option>
+                                <option value="34">MVSep Crowd Removal (Multitud)</option>
+                                <option value="42">MVSep MultiSpeaker (MDX23C)</option>
+                            </optgroup>
+                            <optgroup label="🎸 Guitarras, Bajos y Cuerdas Pulsadas">
+                                <option value="41">MVSep Bass</option>
+                                <option value="31">MVSep Guitar</option>
+                                <option value="66">MVSep Acoustic Guitar</option>
+                                <option value="81">MVSep Electric Guitar</option>
+                                <option value="101">MVSep Lead/Rhythm Guitar</option>
+                                <option value="124">MVSep Pedal Steel Guitar</option>
+                                <option value="102">MVSep Plucked Strings</option>
+                                <option value="96">MVSep Ukulele</option>
+                                <option value="83">MVSep Banjo</option>
+                                <option value="74">MVSep Mandolin</option>
+                                <option value="90">MVSep Sitar</option>
+                                <option value="97">MVSep Dobro</option>
+                                <option value="72">MVSep Harp (Arpa)</option>
+                            </optgroup>
+                            <optgroup label="🥁 Baterías y Percusión">
+                                <option value="44">MVSep Drums</option>
+                                <option value="37">DrumSep (Kick, Snare, Cymbals, Toms, Ride, HH, Crash)</option>
+                                <option value="38">LarsNet (Kick, Snare, Cymbals, Toms, Hihat)</option>
+                                <option value="105">MVSep Percussion</option>
+                                <option value="94">MVSep Congas</option>
+                                <option value="76">MVSep Tambourine</option>
+                                <option value="84">MVSep Marimba</option>
+                                <option value="85">MVSep Glockenspiel</option>
+                                <option value="109">MVSep Xylophone</option>
+                                <option value="86">MVSep Timpani</option>
+                                <option value="89">MVSep Triangle</option>
+                                <option value="95">MVSep Bells</option>
+                                <option value="98">MVSep Wind Chimes</option>
+                                <option value="128">MVSep Cowbell</option>
+                                <option value="133">MVSep Clap</option>
+                            </optgroup>
+                            <optgroup label="🎹 Pianos, Teclados y Sintetizadores">
+                                <option value="29">MVSep Piano</option>
+                                <option value="79">MVSep Digital Piano</option>
+                                <option value="106">MVSep Keys</option>
+                                <option value="88">MVSep Synth</option>
+                                <option value="58">MVSep Organ</option>
+                                <option value="91">MVSep Harpsichord</option>
+                                <option value="99">MVSep Accordion</option>
+                                <option value="129">MVSep Vibraphone</option>
+                                <option value="130">MVSep Metal Bars</option>
+                                <option value="131">MVSep Rhodes</option>
+                                <option value="110">MVSep Celesta</option>
+                            </optgroup>
+                            <optgroup label="🎻 Cuerdas Frotadas y Orquesta">
+                                <option value="52">MVSep Bowed Strings</option>
+                                <option value="65">MVSep Violin</option>
+                                <option value="69">MVSep Viola</option>
+                                <option value="70">MVSep Cello</option>
+                                <option value="73">MVSep Double Bass</option>
+                            </optgroup>
+                            <optgroup label="🎺 Vientos (Maderas y Metales)">
+                                <option value="54">MVSep Wind (General)</option>
+                                <option value="107">MVSep Brass (Metales)</option>
+                                <option value="108">MVSep Woodwind (Maderas)</option>
+                                <option value="61">MVSep Saxophone</option>
+                                <option value="67">MVSep Flute</option>
+                                <option value="71">MVSep Trumpet</option>
+                                <option value="75">MVSep Trombone</option>
+                                <option value="77">MVSep Oboe</option>
+                                <option value="78">MVSep Clarinet</option>
+                                <option value="82">MVSep French Horn</option>
+                                <option value="87">MVSep Harmonica</option>
+                                <option value="92">MVSep Tuba</option>
+                                <option value="93">MVSep Bassoon</option>
+                                <option value="116">MVSep Bagpipes</option>
+                                <option value="132">MVSep Whistle</option>
+                            </optgroup>
+                            <optgroup label="🛠️ Limpieza, Denoise y Efectos">
+                                <option value="20">Demucs4 HT</option>
+                                <option value="10">Demucs3 Model</option>
+                                <option value="13">Demucs2</option>
+                                <option value="7">MDX A/B</option>
+                                <option value="15">Danna Sep</option>
+                                <option value="16">Byte Dance</option>
+                                <option value="24">MVSep Demucs4HT DNR</option>
+                                <option value="36">BandIt Plus</option>
+                                <option value="45">BandIt v2</option>
+                                <option value="56">MVSep DnR v3</option>
+                                <option value="18">MVSep DNR</option>
+                                <option value="22">Reverb Removal (NoReverb)</option>
+                                <option value="47">DeNoise by aufr33</option>
+                                <option value="59">AudioSR (Super Resolution)</option>
+                                <option value="60">FlashSR (Super Resolution)</option>
+                                <option value="117">MVSep Braam</option>
+                                <option value="125">MVSep Risers</option>
+                                <option value="122">MVSep FX</option>
+                                <option value="51">Apollo Enhancers</option>
+                                <option value="50">Aspiration</option>
+                                <option value="55">Phantom Centre extraction</option>
+                                <option value="68">Matchering</option>
+                                <option value="14">Zero Shot</option>
+                            </optgroup>
+                            <optgroup label="🗣️ Texto, Voz y Generación">
+                                <option value="39">Whisper (Extract Text)</option>
+                                <option value="64">Parakeet (Extract Text)</option>
+                                <option value="103">VibeVoice (Voice Cloning)</option>
+                                <option value="104">VibeVoice (TTS)</option>
+                                <option value="118">Qwen3-TTS (Custom Voice)</option>
+                                <option value="119">Qwen3-TTS (Voice Design)</option>
+                                <option value="120">Qwen3-TTS (Voice Cloning)</option>
+                                <option value="115">Bark (Speech Gen)</option>
+                                <option value="62">Stable Audio Open Gen</option>
+                                <option value="121">HeartMuLa (Song Gen)</option>
+                            </optgroup>
+                            <optgroup label="🎹 Extracción a formato MIDI">
+                                <option value="80">SOME (Voz a MIDI)</option>
+                                <option value="113">Transkun (Piano a MIDI)</option>
+                                <option value="114">Basic Pitch (MIDI General)</option>
+                                <option value="127">ADTOF Plus (Batería a MIDI)</option>
+                            </optgroup>
+                        </select>
+          <small class="setting-help">Catálogo completo replicado desde la edición local SOLO PISTAS.</small>
+        </div>
+        <div class="setting format-setting">
+          <label class="field-label" for="format-select">Formato de salida</label>
+          <select id="format-select">
+            <option value="2" selected>FLAC Lossless 16-bit</option>
+            <option value="0">MP3 320 kbps</option>
+            <option value="1">WAV 16-bit</option>
+          </select>
+          <small class="setting-help">FLAC conserva calidad sin pérdida y reduce el tamaño.</small>
+        </div>
+      </div>
+
+      <button id="process-btn" class="primary-btn" type="button" disabled>
+        <span>Iniciar separación</span><span class="btn-arrow">→</span>
+      </button>
+
+      <section id="progress-section" class="progress-section hidden" aria-live="polite">
+        <div class="status-head">
+          <div><span class="status-kicker">ESTADO</span><h2 id="status-title">Preparando</h2></div>
+          <button id="cancel-btn" class="ghost-btn" type="button">Cancelar</button>
+        </div>
+        <p id="status-message" class="status-message">Preparando trabajo…</p>
+
+        <div id="upload-progress-wrap" class="upload-block hidden">
+          <div class="progress-track"><div id="upload-progress" class="progress-fill"></div></div>
+          <div class="progress-stats"><span id="upload-percent">0%</span><span id="upload-stats">0 MB / 0 MB</span></div>
+        </div>
+
+        <div id="indeterminate" class="indeterminate hidden"><span></span></div>
+        <div id="queue-info" class="queue-info hidden"></div>
+
+        <div class="steps">
+          <div class="step active" data-step="upload"><span>1</span><small>Envío</small></div>
+          <div class="step" data-step="queue"><span>2</span><small>Cola</small></div>
+          <div class="step" data-step="process"><span>3</span><small>Proceso</small></div>
+          <div class="step" data-step="finish"><span>4</span><small>Listo</small></div>
+        </div>
+      </section>
+    </section>
+
+    <section id="results-section" class="results-section hidden">
+      <div class="results-head"><div><span class="eyebrow">RESULTADO</span><h2>Resultados listos</h2><p id="result-model" class="result-model"></p></div><button id="new-job-btn" class="ghost-btn" type="button">Nueva canción</button></div>
+      <div id="tracks-grid" class="tracks-grid"></div>
+      <p class="direct-note">La reproducción y descarga se realizan directamente desde el servidor de procesamiento. MVP Studio IA no almacena estas pistas.</p>
+    </section>
+
+    <footer>
+      <span>MVP Studio IA</span>
+      <span>•</span>
+      <span>Procesamiento remoto sin almacenamiento local en nuestros servidores</span>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/app.js?v=auth2" defer></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+CAMBIOS DESDE MVP STUDIO IA WEB RENDER V1
+==========================================
+
+REEMPLAZA / AGREGA ESTOS ARCHIVOS:
+
+backend/main.py
+backend/mvsep_client.py
+backend/control_client.py          (nuevo)
+backend/session_auth.py            (nuevo)
+
+public/index.html
+public/styles.css
+public/app.js
+
+render.yaml
+.env.example
+
+AGREGA TAMBIÉN:
+GOOGLE_APPS_SCRIPT_CODE.gs
+INSTALACION_LOGIN_GOOGLE_SHEET.txt
+
+NO MODIFICAR:
+backend/youtube_downloader.py
+Dockerfile
+requirements.txt
+
+CAMBIO FUNCIONAL:
+- Se elimina el concepto de clave de activación.
+- Login con usuario + contraseña.
+- Cookie segura persistente 90 días.
+- Validación del usuario al abrir la web.
+- Validación silenciosa antes de cada nuevo trabajo.
+- Si bloqueas al usuario en Sheets, no inicia nuevos trabajos.
+- USUARIOS y API_KEYS viven en un único Google Sheet.
+- Un único Apps Script maneja login + rotación de APIs.
+- YouTube, archivo local, Drive/Dropbox/MEGA y modelos se conservan.
+
+VARIABLES RENDER:
+CONTROL_SCRIPT_URL=https://script.google.com/macros/s/.../exec
+CONTROL_BACKEND_SECRET=xxxxxxxx
+SESSION_DAYS=90
+
+Opcional:
+SESSION_SECRET=otra_clave_larga
+
+ELIMINAR SI YA NO LAS USAS:
+APPS_SCRIPT_URL
+variables antiguas de licencia web
+
+NO GUARDES:
+usuario
+contraseña
+API_KEY
+en archivos del repositorio.

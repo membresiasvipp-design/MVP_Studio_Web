@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mvpstudioia
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_NAME
+        value: MVP Studio IA
+      - key: MAX_UPLOAD_MB
+        value: "40"
+      - key: MAX_YOUTUBE_DURATION_SECONDS
+        value: "1800"
+      - key: MAX_ACTIVE_JOBS
+        value: "2"
+      - key: SESSION_DAYS
+        value: "90"
+      - key: CONTROL_SCRIPT_URL
+        sync: false
+      - key: CONTROL_BACKEND_SECRET
+        sync: false
